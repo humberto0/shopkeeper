@@ -17,6 +17,15 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+// @title						shopkeeper API
+// @version					1.0
+// @description				Stock and sales management API for local shop owners.
+// @contact.name				Humberto
+// @contact.url				https://github.com/humberto0/shopkeeper
+// @license.name				MIT
+// @license.url				https://github.com/humberto0/shopkeeper/blob/main/LICENSE
+// @schemes					http
+// @basePath					/
 func main() {
 	if err := run(); err != nil {
 		slog.Error("fatal error", "error", err)
@@ -89,6 +98,15 @@ func run() error {
 	return nil
 }
 
+// handleHealth godoc
+//
+//	@Summary		Health check
+//	@Description	Pings the database pool to check that the API and its dependencies are up.
+//	@Tags			health
+//	@Produce		json
+//	@Success		200	{object}	map[string]string	"status: ok"
+//	@Failure		503	{string}	string				"database unavailable"
+//	@Router			/health [get]
 func handleHealth(pool *pgxpool.Pool) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if err := pool.Ping(r.Context()); err != nil {
