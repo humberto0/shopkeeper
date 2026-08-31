@@ -1,0 +1,17 @@
+### Variables
+@baseUrl = http://localhost:8080
+
+### Health check — pings the database pool
+GET {{baseUrl}}/health
+
+### Register a new user (owner)
+POST {{baseUrl}}/users
+Content-Type: application/json
+
+{
+  "name": "Humberto test",
+  "email": "humbertotest@shop.com",
+  "password": "senha1234",
+  "role": "owner"
+}
+

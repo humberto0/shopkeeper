@@ -35,17 +35,17 @@ func NewRegisterUser(repo registerUserRepository) *RegisterUser {
 }
 
 func (uc *RegisterUser) Execute(ctx context.Context, in RegisterUserInput) (*RegisterUserOutput, error) {
-	exists, err := uc.repo.ExistsByEmail(ctx, in.Email)
+	u, err := user.New(in.Name, in.Email, in.Password, in.Role)
+	if err != nil {
+		return nil, err
+	}
+
+	exists, err := uc.repo.ExistsByEmail(ctx, u.Email())
 	if err != nil {
 		return nil, fmt.Errorf("checking if email exists: %w", err)
 	}
 	if exists {
 		return nil, user.ErrEmailAlreadyExists
-	}
-
-	u, err := user.New(in.Name, in.Email, in.Password, in.Role)
-	if err != nil {
-		return nil, err
 	}
 
 	if err := uc.repo.Save(ctx, u); err != nil {
