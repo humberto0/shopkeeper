@@ -1,0 +1,108 @@
+basePath: /
+definitions:
+  handler.errorResponse:
+    properties:
+      error:
+        type: string
+    type: object
+  handler.registerUserRequest:
+    properties:
+      email:
+        example: humbertotest@shop.com
+        type: string
+      name:
+        example: Humberto test
+        type: string
+      password:
+        example: senha1234
+        type: string
+      role:
+        enum:
+        - owner
+        - clerk
+        example: owner
+        type: string
+    type: object
+  handler.registerUserResponse:
+    properties:
+      email:
+        example: humbertotest@shop.com
+        type: string
+      id:
+        example: 018f1d3a-7c3e-7c3e-8b3e-7c3e7c3e7c3e
+        type: string
+      name:
+        example: Humberto test
+        type: string
+      role:
+        example: owner
+        type: string
+    type: object
+info:
+  contact:
+    name: Humberto
+    url: https://github.com/humberto0/shopkeeper
+  description: Stock and sales management API for local shop owners.
+  license:
+    name: MIT
+    url: https://github.com/humberto0/shopkeeper/blob/main/LICENSE
+  title: shopkeeper API
+  version: "1.0"
+paths:
+  /health:
+    get:
+      description: Pings the database pool to check that the API and its dependencies
+        are up.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'status: ok'
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "503":
+          description: database unavailable
+          schema:
+            type: string
+      summary: Health check
+      tags:
+      - health
+  /users:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new user account (owner or clerk).
+      parameters:
+      - description: User to register
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.registerUserRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/handler.registerUserResponse'
+        "400":
+          description: malformed request body
+          schema:
+            $ref: '#/definitions/handler.errorResponse'
+        "409":
+          description: email already exists
+          schema:
+            $ref: '#/definitions/handler.errorResponse'
+        "422":
+          description: invalid name, email, password or role
+          schema:
+            $ref: '#/definitions/handler.errorResponse'
+      summary: Register a new user
+      tags:
+      - users
+schemes:
+- http
+swagger: "2.0"

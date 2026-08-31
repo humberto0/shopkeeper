@@ -16,6 +16,7 @@ The project is intentionally built with Go's standard library at its core and a 
 - [Architecture](#architecture)
 - [Data Model](#data-model)
 - [API Endpoints](#api-endpoints)
+- [API Documentation (Swagger)](#api-documentation-swagger)
 - [Getting Started](#getting-started)
 - [Roadmap](#roadmap)
 - [License](#license)
@@ -249,6 +250,32 @@ POST   /purchases
 GET    /reports/sales-summary
 GET    /reports/top-products
 ```
+
+---
+
+## API Documentation (Swagger)
+
+Routes are documented with [swaggo](https://github.com/swaggo/swag) annotations on the handlers, and served as an interactive Swagger UI directly from the running API — no separate tool needed.
+
+With the server running (see [Getting Started](#getting-started)), open:
+
+```
+http://localhost:8080/swagger/index.html
+```
+
+From there you can browse every documented route, inspect request/response schemas, and use **Try it out** to fire real requests against the running API.
+
+The raw OpenAPI spec is also available at `http://localhost:8080/swagger/doc.json`.
+
+### Regenerating the docs
+
+The Swagger spec lives in `docs/` and is generated from the `@...` comments above handler functions (see `cmd/api/main.go` and `internal/infrastructure/http/handler/user_handler.go`). Whenever you add or change a route, update its annotations and regenerate:
+
+```bash
+make swag
+```
+
+This runs `swag` as a Go tool dependency (declared in `go.mod`), so no separate install is required — commit the regenerated `docs/` folder along with your handler changes.
 
 ---
 

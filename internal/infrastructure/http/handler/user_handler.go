@@ -24,20 +24,35 @@ func NewUserHandler(registerUser registerUserUseCase) *UserHandler {
 	return &UserHandler{registerUser: registerUser}
 }
 
+// registerUserRequest is the payload to create a new user.
 type registerUserRequest struct {
-	Name     string `json:"name"`
-	Email    string `json:"email"`
-	Password string `json:"password"`
-	Role     string `json:"role"`
+	Name     string `json:"name" example:"Humberto test"`
+	Email    string `json:"email" example:"humbertotest@shop.com"`
+	Password string `json:"password" example:"senha1234"`
+	Role     string `json:"role" example:"owner" enums:"owner,clerk"`
 }
 
+// registerUserResponse is the public representation of a created user.
 type registerUserResponse struct {
-	ID    string `json:"id"`
-	Name  string `json:"name"`
-	Email string `json:"email"`
-	Role  string `json:"role"`
+	ID    string `json:"id" example:"018f1d3a-7c3e-7c3e-8b3e-7c3e7c3e7c3e"`
+	Name  string `json:"name" example:"Humberto test"`
+	Email string `json:"email" example:"humbertotest@shop.com"`
+	Role  string `json:"role" example:"owner"`
 }
 
+// Register godoc
+//
+//	@Summary		Register a new user
+//	@Description	Creates a new user account (owner or clerk).
+//	@Tags			users
+//	@Accept			json
+//	@Produce		json
+//	@Param			request	body		registerUserRequest		true	"User to register"
+//	@Success		201		{object}	registerUserResponse
+//	@Failure		400		{object}	errorResponse	"malformed request body"
+//	@Failure		409		{object}	errorResponse	"email already exists"
+//	@Failure		422		{object}	errorResponse	"invalid name, email, password or role"
+//	@Router			/users [post]
 func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 	var req registerUserRequest
 
