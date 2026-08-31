@@ -1,0 +1,27 @@
+# Everything here is excluded from the build context sent to the Docker
+# daemon. A smaller context means faster builds and fewer accidental
+# secrets baked into the image.
+
+.git
+.gitignore
+.idea
+.vscode
+
+.env
+*.env
+!.env.example
+
+bin/
+tmp/
+
+*_test.go
+test/
+
+README.md
+docs/
+*.md
+
+Dockerfile
+.dockerignore
+docker-compose.yml
+Makefile
