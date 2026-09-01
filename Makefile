@@ -35,7 +35,10 @@ test:
 COVERAGE_THRESHOLD ?= 40
 
 test-coverage:
-	go test ./... -coverpkg=./... -coverprofile=coverage.out
+	# -p 1: test/integration and test/e2e share the same Postgres database
+	# and fixture emails, so running those packages concurrently (the
+	# default) races on the same rows and produces spurious failures.
+	go test ./... -p 1 -coverpkg=./... -coverprofile=coverage.out
 	go tool cover -func=coverage.out | tail -1
 
 test-coverage-html: test-coverage
