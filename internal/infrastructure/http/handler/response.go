@@ -16,7 +16,9 @@ type errorResponse struct {
 func writeJSON(w http.ResponseWriter, status int, v any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(v)
+	if err := json.NewEncoder(w).Encode(v); err != nil {
+		slog.Error("failed to encode response", "err", err)
+	}
 }
 
 func writeError(w http.ResponseWriter, status int, msg string) {
@@ -25,6 +27,8 @@ func writeError(w http.ResponseWriter, status int, msg string) {
 
 func writeDomainError(w http.ResponseWriter, err error) {
 	switch {
+	case errors.Is(err, user.ErrInvalidID):
+		writeError(w, http.StatusBadRequest, err.Error())
 	case errors.Is(err, user.ErrEmailAlreadyExists):
 		writeError(w, http.StatusConflict, err.Error())
 	case errors.Is(err, user.ErrInvalidName),

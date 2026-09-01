@@ -1,0 +1,48 @@
+version: "2"
+
+linters:
+  default: standard
+
+  enable:
+    - errorlint      # catches err == ErrFoo where errors.Is belongs
+    - bodyclose      # HTTP response bodies left unclosed
+    - sqlclosecheck  # sql.Rows left unclosed
+    - noctx          # HTTP requests sent without a context
+    - revive         # general style checks
+    - misspell
+    - nilerr         # returns nil when err is non-nil
+
+  settings:
+    errcheck:
+      check-type-assertions: true
+
+    revive:
+      rules:
+        - name: exported
+          disabled: true  # not every exported symbol needs a doc comment
+
+  exclusions:
+    # v2 ships no exclusions by default; these presets bring back the
+    # sensible ones instead of hand-writing regexes.
+    presets:
+      - comments
+      - std-error-handling
+      - common-false-positives
+
+    rules:
+      # Tests may ignore errors freely — noise here trains you to ignore
+      # the linter everywhere else.
+      - path: _test\.go
+        linters:
+          - errcheck
+          - bodyclose
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/humberto0/shopkeeper

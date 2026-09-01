@@ -98,6 +98,47 @@
                     }
                 }
             }
+        },
+        "/users/{id}": {
+            "get": {
+                "description": "Find user by ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Find User",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handler.findUserResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "malformed id",
+                        "schema": {
+                            "$ref": "#/definitions/handler.errorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "user not found",
+                        "schema": {
+                            "$ref": "#/definitions/handler.errorResponse"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -106,6 +147,39 @@
             "properties": {
                 "error": {
                     "type": "string"
+                }
+            }
+        },
+        "handler.findUserResponse": {
+            "type": "object",
+            "properties": {
+                "createdAt": {
+                    "type": "string",
+                    "example": "2020-01-01T00:00:00Z"
+                },
+                "email": {
+                    "type": "string",
+                    "example": "humbertotest@shop.com"
+                },
+                "id": {
+                    "type": "string",
+                    "example": "018f1d3a-7c3e-7c3e-8b3e-7c3e7c3e7c3e"
+                },
+                "isActive": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Humberto test"
+                },
+                "role": {
+                    "type": "string",
+                    "example": "owner"
+                },
+                "updatedAt": {
+                    "type": "string",
+                    "example": "2020-01-01T00:00:00Z"
                 }
             }
         },

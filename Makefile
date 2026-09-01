@@ -1,4 +1,4 @@
-.PHONY: migrate-create migrate-up migrate-down migrate-version swag
+.PHONY: migrate-create migrate-up migrate-down migrate-version swag test-db-up test-integration test-e2e
 
 DATABASE_URL ?= postgres://shopkeeper:shopkeeper@localhost:5432/shopkeeper?sslmode=disable
 TEST_DATABASE_URL ?= postgres://shopkeeper:shopkeeper@localhost:5433/shopkeeper_test?sslmode=disable
@@ -25,3 +25,16 @@ test-db-up:
 
 test-integration: test-db-up
 	go test ./test/integration/... -v
+
+test-e2e: test-db-up
+	go test ./test/e2e/... -v
+
+test:
+	go test ./... -short
+
+test-coverage:
+	go test ./... -coverprofile=coverage.out
+	go tool cover -func=coverage.out | tail -1
+
+test-coverage-html: test-coverage
+	go tool cover -html=coverage.out

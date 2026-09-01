@@ -128,7 +128,7 @@ func TestUserRepository_Update(t *testing.T) {
 	ctx := context.Background()
 	repo := postgres.NewUserRepository(testPool)
 
-	created  := newTestUser(t, "humberto@shop.com")
+	created := newTestUser(t, "humberto@shop.com")
 	if err := repo.Save(ctx, created); err != nil {
 		t.Fatalf("expected no error saving user: %v", err)
 	}
@@ -170,28 +170,27 @@ func TestUserRepository_UpdateNotFound(t *testing.T) {
 	}
 }
 
-
 func TestUserRepository_ExistsByEmail(t *testing.T) {
 	truncateUsers(t)
 	ctx := context.Background()
 	repo := postgres.NewUserRepository(testPool)
 
-	if err := repo.Save(ctx, newTestUser(t,"humberto@shop.com")); err !=nil {
+	if err := repo.Save(ctx, newTestUser(t, "humberto@shop.com")); err != nil {
 		t.Fatalf("expected no error saving user: %v", err)
 	}
 
-	tests := [] struct{
-		name string
+	tests := []struct {
+		name  string
 		email string
-		want bool
+		want  bool
 	}{
 		{"existing email", "humberto@shop.com", true},
-	    {"existing email in upper case", "HUMBERTO@SHOP.COM", true},
+		{"existing email in upper case", "HUMBERTO@SHOP.COM", true},
 		{"unknow email", "nobody@shop.com", false},
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t* testing.T) {
+		t.Run(tt.name, func(t *testing.T) {
 			got, err := repo.ExistsByEmail(ctx, tt.email)
 			if err != nil {
 				t.Fatalf("expected no error saving user: %v", err)

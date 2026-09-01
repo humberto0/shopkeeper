@@ -6,7 +6,6 @@ import (
 	"time"
 )
 
-
 type statusRecorder struct {
 	http.ResponseWriter
 	status      int

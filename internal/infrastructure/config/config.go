@@ -142,7 +142,9 @@ func loadDotEnv(path string) {
 		}
 
 		value = strings.Trim(strings.TrimSpace(value), `"'`)
-		os.Setenv(key, value)
+		if err := os.Setenv(key, value); err != nil {
+			return
+		}
 	}
 }
 

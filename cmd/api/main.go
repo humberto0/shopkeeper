@@ -59,7 +59,8 @@ func run() error {
 
 	userRepo := postgres.NewUserRepository(pool)
 	registerUser := userapp.NewRegisterUser(userRepo)
-	userHandler := handler.NewUserHandler(registerUser)
+	findUserByID := userapp.NewFindUserByID(userRepo)
+	userHandler := handler.NewUserHandler(registerUser, findUserByID)
 
 	router := httprouter.NewRouter(userHandler, handleHealth(pool))
 
