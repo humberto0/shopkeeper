@@ -9,6 +9,9 @@ pre-commit:
       run: golangci-lint run
 
 pre-push:
+  parallel: true
   commands:
     test:
       run: make test
+    govulncheck:
+      run: make govulncheck
