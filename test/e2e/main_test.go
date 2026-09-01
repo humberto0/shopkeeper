@@ -28,7 +28,7 @@ func TestMain(m *testing.M) {
 	)
 	router = httprouter.NewRouter(userHandler, func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-	})
+	}, []string{"*"})
 
 	code := m.Run()
 	testPool.Close()

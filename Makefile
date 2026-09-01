@@ -1,4 +1,4 @@
-.PHONY: migrate-create migrate-up migrate-down migrate-version swag test-db-up test-integration test-e2e
+.PHONY: migrate-create migrate-up migrate-down migrate-version swag test-db-up test-integration test-e2e test test-coverage test-coverage-html test-coverage-check govulncheck
 
 DATABASE_URL ?= postgres://shopkeeper:shopkeeper@localhost:5432/shopkeeper?sslmode=disable
 TEST_DATABASE_URL ?= postgres://shopkeeper:shopkeeper@localhost:5433/shopkeeper_test?sslmode=disable
@@ -32,9 +32,25 @@ test-e2e: test-db-up
 test:
 	go test ./... -short
 
+COVERAGE_THRESHOLD ?= 40
+
 test-coverage:
-	go test ./... -coverprofile=coverage.out
+	# -p 1: test/integration and test/e2e share the same Postgres database
+	# and fixture emails, so running those packages concurrently (the
+	# default) races on the same rows and produces spurious failures.
+	go test ./... -p 1 -coverpkg=./... -coverprofile=coverage.out
 	go tool cover -func=coverage.out | tail -1
 
 test-coverage-html: test-coverage
 	go tool cover -html=coverage.out
+
+# test-coverage-check is what CI runs: it fails the build if total coverage
+# drops below COVERAGE_THRESHOLD, instead of just reporting the number.
+test-coverage-check: test-coverage
+	@total=$$(go tool cover -func=coverage.out | tail -1 | awk '{print $$3}' | tr -d '%'); \
+	echo "total coverage: $$total% (threshold: $(COVERAGE_THRESHOLD)%)"; \
+	awk -v t="$$total" -v th="$(COVERAGE_THRESHOLD)" 'BEGIN { exit !(t+0 >= th+0) }' || \
+		(echo "coverage $$total% is below the $(COVERAGE_THRESHOLD)% threshold" && exit 1)
+
+govulncheck:
+	go run golang.org/x/vuln/cmd/govulncheck ./...

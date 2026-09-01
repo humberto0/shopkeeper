@@ -62,7 +62,7 @@ func run() error {
 	findUserByID := userapp.NewFindUserByID(userRepo)
 	userHandler := handler.NewUserHandler(registerUser, findUserByID)
 
-	router := httprouter.NewRouter(userHandler, handleHealth(pool))
+	router := httprouter.NewRouter(userHandler, handleHealth(pool), cfg.CORS.AllowedOrigins)
 
 	server := &http.Server{
 		Addr:         ":" + cfg.Serve.Port,

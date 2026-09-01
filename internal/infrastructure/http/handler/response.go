@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/humberto0/shopkeeper/internal/domain/user"
+	"github.com/humberto0/shopkeeper/internal/infrastructure/http/middleware"
 )
 
 type errorResponse struct {
@@ -25,7 +26,7 @@ func writeError(w http.ResponseWriter, status int, msg string) {
 	writeJSON(w, status, errorResponse{Error: msg})
 }
 
-func writeDomainError(w http.ResponseWriter, err error) {
+func writeDomainError(w http.ResponseWriter, r *http.Request, err error) {
 	switch {
 	case errors.Is(err, user.ErrInvalidID):
 		writeError(w, http.StatusBadRequest, err.Error())
@@ -43,7 +44,7 @@ func writeDomainError(w http.ResponseWriter, err error) {
 	case errors.Is(err, user.ErrUserInactive):
 		writeError(w, http.StatusForbidden, err.Error())
 	default:
-		slog.Error("unhandled domain error", "error", err)
+		slog.Error("unhandled domain error", "error", err, "request_id", middleware.RequestIDFromContext(r.Context()))
 		writeError(w, http.StatusInternalServerError, "internal server error")
 	}
 }
