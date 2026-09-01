@@ -14,6 +14,7 @@ func NewRouter(userHandler *handler.UserHandler, healthHandler http.HandlerFunc)
 
 	mux.HandleFunc("GET /health", healthHandler)
 	mux.HandleFunc("POST /users", userHandler.Register)
+	mux.HandleFunc("GET /users/{id}", userHandler.Find)
 
 	mux.Handle("GET /swagger/", httpSwagger.WrapHandler)
 

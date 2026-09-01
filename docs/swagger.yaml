@@ -5,6 +5,30 @@ definitions:
       error:
         type: string
     type: object
+  handler.findUserResponse:
+    properties:
+      createdAt:
+        example: "2020-01-01T00:00:00Z"
+        type: string
+      email:
+        example: humbertotest@shop.com
+        type: string
+      id:
+        example: 018f1d3a-7c3e-7c3e-8b3e-7c3e7c3e7c3e
+        type: string
+      isActive:
+        example: true
+        type: boolean
+      name:
+        example: Humberto test
+        type: string
+      role:
+        example: owner
+        type: string
+      updatedAt:
+        example: "2020-01-01T00:00:00Z"
+        type: string
+    type: object
   handler.registerUserRequest:
     properties:
       email:
@@ -101,6 +125,33 @@ paths:
           schema:
             $ref: '#/definitions/handler.errorResponse'
       summary: Register a new user
+      tags:
+      - users
+  /users/{id}:
+    get:
+      description: Find user by ID
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.findUserResponse'
+        "400":
+          description: malformed id
+          schema:
+            $ref: '#/definitions/handler.errorResponse'
+        "404":
+          description: user not found
+          schema:
+            $ref: '#/definitions/handler.errorResponse'
+      summary: Find User
       tags:
       - users
 schemes:

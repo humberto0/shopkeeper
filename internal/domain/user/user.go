@@ -16,6 +16,7 @@ var (
 	ErrInvalidEmail       = errors.New("user: invalid email address")
 	ErrWeakPassword       = errors.New("user: password must be at least 8 characters")
 	ErrInvalidRole        = errors.New("user: invalid role")
+	ErrInvalidID          = errors.New("user: invalid id")
 	ErrInvalidCredentials = errors.New("user: invalid credentials")
 	ErrUserInactive       = errors.New("user: account is inactive")
 	ErrEmailAlreadyExists = errors.New("user: email already exists")

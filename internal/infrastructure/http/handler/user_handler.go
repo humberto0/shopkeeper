@@ -7,6 +7,7 @@ import (
 	"io"
 	"mime"
 	"net/http"
+	"time"
 
 	userapp "github.com/humberto0/shopkeeper/internal/application/user"
 	"github.com/humberto0/shopkeeper/internal/domain/user"
@@ -16,12 +17,20 @@ type registerUserUseCase interface {
 	Execute(ctx context.Context, in userapp.RegisterUserInput) (*userapp.RegisterUserOutput, error)
 }
 
-type UserHandler struct {
-	registerUser registerUserUseCase
+type findUserByIDUseCase interface {
+	Execute(ctx context.Context, id string) (*userapp.FindUserByIDResult, error)
 }
 
-func NewUserHandler(registerUser registerUserUseCase) *UserHandler {
-	return &UserHandler{registerUser: registerUser}
+type UserHandler struct {
+	registerUser registerUserUseCase
+	findUser     findUserByIDUseCase
+}
+
+func NewUserHandler(registerUser registerUserUseCase, findUser findUserByIDUseCase) *UserHandler {
+	return &UserHandler{
+		registerUser: registerUser,
+		findUser:     findUser,
+	}
 }
 
 // registerUserRequest is the payload to create a new user.
@@ -38,6 +47,16 @@ type registerUserResponse struct {
 	Name  string `json:"name" example:"Humberto test"`
 	Email string `json:"email" example:"humbertotest@shop.com"`
 	Role  string `json:"role" example:"owner"`
+}
+
+type findUserResponse struct {
+	ID        string    `json:"id" example:"018f1d3a-7c3e-7c3e-8b3e-7c3e7c3e7c3e"`
+	Name      string    `json:"name" example:"Humberto test"`
+	Email     string    `json:"email" example:"humbertotest@shop.com"`
+	Role      string    `json:"role" example:"owner"`
+	IsActive  bool      `json:"isActive" example:"true"`
+	CreatedAt time.Time `json:"createdAt" example:"2020-01-01T00:00:00Z"`
+	UpdatedAt time.Time `json:"updatedAt" example:"2020-01-01T00:00:00Z"`
 }
 
 // Register godoc
@@ -78,6 +97,35 @@ func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 		Name:  out.Name,
 		Email: out.Email,
 		Role:  string(out.Role),
+	})
+}
+
+// Find godoc
+//
+//	@Summary		Find User
+//	@Description	Find user by ID
+//	@Tags			users
+//	@Produce		json
+//	@Param			id	path		string	true	"User ID"
+//	@Success		200	{object}	findUserResponse
+//	@Failure		400	{object}	errorResponse	"malformed id"
+//	@Failure		404	{object}	errorResponse	"user not found"
+//	@Router			/users/{id} [get]
+func (h *UserHandler) Find(w http.ResponseWriter, r *http.Request) {
+	u, err := h.findUser.Execute(r.Context(), r.PathValue("id"))
+	if err != nil {
+		writeDomainError(w, err)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, findUserResponse{
+		ID:        u.ID,
+		Name:      u.Name,
+		Email:     u.Email,
+		Role:      string(u.Role),
+		IsActive:  u.IsActive,
+		CreatedAt: u.CreatedAt,
+		UpdatedAt: u.UpdatedAt,
 	})
 }
 
