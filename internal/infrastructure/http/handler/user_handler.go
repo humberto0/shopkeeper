@@ -87,8 +87,7 @@ func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 		Role:     user.Role(req.Role),
 	})
 	if err != nil {
-
-		writeDomainError(w, err)
+		writeDomainError(w, r, err)
 		return
 	}
 
@@ -114,7 +113,7 @@ func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 func (h *UserHandler) Find(w http.ResponseWriter, r *http.Request) {
 	u, err := h.findUser.Execute(r.Context(), r.PathValue("id"))
 	if err != nil {
-		writeDomainError(w, err)
+		writeDomainError(w, r, err)
 		return
 	}
 

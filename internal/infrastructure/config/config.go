@@ -11,6 +11,7 @@ import (
 type Config struct {
 	Serve    ServerConfig
 	Database DatabaseConfig
+	CORS     CORSConfig
 }
 
 func (d DatabaseConfig) DSN() string {
@@ -26,6 +27,12 @@ type ServerConfig struct {
 	WriteTimeout    time.Duration
 	IdleTimeout     time.Duration
 	ShutdownTimeout time.Duration
+}
+
+// CORSConfig controls which browser origins may call this API directly.
+// AllowedOrigins containing "*" allows any origin.
+type CORSConfig struct {
+	AllowedOrigins []string
 }
 
 type DatabaseConfig struct {
@@ -109,6 +116,9 @@ func Load() (*Config, error) {
 			MaxConnIdleTime: maxConnIdleTime,
 			MaxConnLifetime: maxConnLifetime,
 		},
+		CORS: CORSConfig{
+			AllowedOrigins: envList("CORS_ALLOWED_ORIGINS", []string{"*"}),
+		},
 	}, nil
 }
 
@@ -173,6 +183,25 @@ func envInt(key string, fallback int) (int, error) {
 		return 0, fmt.Errorf("config: %s must be a valid integer: %w", key, err)
 	}
 	return i, nil
+}
+
+func envList(key string, fallback []string) []string {
+	value := os.Getenv(key)
+	if value == "" {
+		return fallback
+	}
+
+	parts := strings.Split(value, ",")
+	out := make([]string, 0, len(parts))
+	for _, p := range parts {
+		if p = strings.TrimSpace(p); p != "" {
+			out = append(out, p)
+		}
+	}
+	if len(out) == 0 {
+		return fallback
+	}
+	return out
 }
 
 func envDuration(key string, fallback time.Duration) (time.Duration, error) {

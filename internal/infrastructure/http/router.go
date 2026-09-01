@@ -9,7 +9,7 @@ import (
 	httpSwagger "github.com/swaggo/http-swagger/v2"
 )
 
-func NewRouter(userHandler *handler.UserHandler, healthHandler http.HandlerFunc) http.Handler {
+func NewRouter(userHandler *handler.UserHandler, healthHandler http.HandlerFunc, corsAllowedOrigins []string) http.Handler {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /health", healthHandler)
@@ -18,7 +18,11 @@ func NewRouter(userHandler *handler.UserHandler, healthHandler http.HandlerFunc)
 
 	mux.Handle("GET /swagger/", httpSwagger.WrapHandler)
 
-	return middleware.Logger(
-		middleware.Recover(mux),
+	return middleware.RequestID(
+		middleware.Logger(
+			middleware.Recover(
+				middleware.CORS(corsAllowedOrigins)(mux),
+			),
+		),
 	)
 }
