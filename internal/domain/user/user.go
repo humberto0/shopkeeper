@@ -139,6 +139,25 @@ func (u *User) Rename(name string) error {
 	return nil
 }
 
+func (u *User) ChangeEmail(email string) error {
+	email = strings.ToLower(strings.TrimSpace(email))
+	if !emailPattern.MatchString(email) {
+		return ErrInvalidEmail
+	}
+	u.email = email
+	u.touch()
+	return nil
+}
+
+func (u *User) ChangeRole(role Role) error {
+	if !role.IsValid() {
+		return ErrInvalidRole
+	}
+	u.role = role
+	u.touch()
+	return nil
+}
+
 func (u *User) Deactivate() {
 	if !u.isActive {
 		return
