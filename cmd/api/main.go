@@ -60,7 +60,8 @@ func run() error {
 	userRepo := postgres.NewUserRepository(pool)
 	registerUser := userapp.NewRegisterUser(userRepo)
 	findUserByID := userapp.NewFindUserByID(userRepo)
-	userHandler := handler.NewUserHandler(registerUser, findUserByID)
+	editUser := userapp.NewEditUser(userRepo)
+	userHandler := handler.NewUserHandler(registerUser, findUserByID, editUser)
 
 	router := httprouter.NewRouter(userHandler, handleHealth(pool), cfg.CORS.AllowedOrigins)
 

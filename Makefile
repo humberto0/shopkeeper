@@ -19,6 +19,9 @@ migrate-down:
 migrate-version:
 	migrate -path migrations -database "$(DATABASE_URL)" version
 
+db-up:
+	docker compose up -d --wait postgres
+
 test-db-up:
 	docker compose up -d --wait postgres-test
 	migrate -path migrations -database "$(TEST_DATABASE_URL)" up

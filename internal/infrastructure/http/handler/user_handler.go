@@ -21,15 +21,21 @@ type findUserByIDUseCase interface {
 	Execute(ctx context.Context, id string) (*userapp.FindUserByIDResult, error)
 }
 
+type editUserUseCase interface {
+	Execute(ctx context.Context, in userapp.EditUserInput) (*userapp.EditUserOutput, error)
+}
+
 type UserHandler struct {
 	registerUser registerUserUseCase
 	findUser     findUserByIDUseCase
+	editUser     editUserUseCase
 }
 
-func NewUserHandler(registerUser registerUserUseCase, findUser findUserByIDUseCase) *UserHandler {
+func NewUserHandler(registerUser registerUserUseCase, findUser findUserByIDUseCase, editUser editUserUseCase) *UserHandler {
 	return &UserHandler{
 		registerUser: registerUser,
 		findUser:     findUser,
+		editUser:     editUser,
 	}
 }
 
@@ -49,12 +55,30 @@ type registerUserResponse struct {
 	Role  string `json:"role" example:"owner"`
 }
 
+// editUserRequest is the payload to edit an existing user.
+type editUserRequest struct {
+	Name    string `json:"name" example:"Humberto test"`
+	Email   string `json:"email" example:"humberto@shop.com"`
+	Role    string `json:"role" example:"owner"`
+	Version int    `json:"version" example:"1"`
+}
+
+// editUserResponse is the public representation of an edited user.
+type editUserResponse struct {
+	ID      string `json:"id" example:"018f1d3a-7c3e-7c3e-8b3e-7c3e7c3e7c3e"`
+	Name    string `json:"name" example:"Humberto test"`
+	Email   string `json:"email" example:"humberto@shop.com"`
+	Role    string `json:"role" example:"owner"`
+	Version int    `json:"version" example:"1"`
+}
+
 type findUserResponse struct {
 	ID        string    `json:"id" example:"018f1d3a-7c3e-7c3e-8b3e-7c3e7c3e7c3e"`
 	Name      string    `json:"name" example:"Humberto test"`
 	Email     string    `json:"email" example:"humbertotest@shop.com"`
 	Role      string    `json:"role" example:"owner"`
 	IsActive  bool      `json:"isActive" example:"true"`
+	Version   int       `json:"version" example:"1"`
 	CreatedAt time.Time `json:"createdAt" example:"2020-01-01T00:00:00Z"`
 	UpdatedAt time.Time `json:"updatedAt" example:"2020-01-01T00:00:00Z"`
 }
@@ -123,9 +147,56 @@ func (h *UserHandler) Find(w http.ResponseWriter, r *http.Request) {
 		Email:     u.Email,
 		Role:      string(u.Role),
 		IsActive:  u.IsActive,
+		Version:   u.Version,
 		CreatedAt: u.CreatedAt,
 		UpdatedAt: u.UpdatedAt,
 	})
+}
+
+// Edit godoc
+//
+//	@Summary		Edit an existing user
+//	@Description	Edit user account (owner or clerk). Version must match the current stored version (optimistic locking).
+//	@Tags			users
+//	@Accept			json
+//	@Produce		json
+//	@Param			id		path		string				true	"User ID"
+//	@Param			request	body		editUserRequest		true	"User fields to update"
+//	@Success		200		{object}	editUserResponse
+//	@Failure		400		{object}	errorResponse	"malformed request body or invalid id"
+//	@Failure		404		{object}	errorResponse	"user not found"
+//	@Failure		409		{object}	errorResponse	"email already exists"
+//	@Failure		422		{object}	errorResponse	"invalid name, email, role, or stale version"
+//	@Router			/users/{id} [put]
+func (h *UserHandler) Update(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	var req editUserRequest
+
+	if err := decodeJSON(w, r, &req); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	u, err := h.editUser.Execute(r.Context(), userapp.EditUserInput{
+		ID:      id,
+		Name:    req.Name,
+		Email:   req.Email,
+		Role:    user.Role(req.Role),
+		Version: req.Version,
+	})
+	if err != nil {
+		writeDomainError(w, r, err)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, editUserResponse{
+		ID:      u.ID,
+		Name:    u.Name,
+		Email:   u.Email,
+		Role:    string(u.Role),
+		Version: u.Version,
+	})
+
 }
 
 const maxRequestBodySize = 1 << 20

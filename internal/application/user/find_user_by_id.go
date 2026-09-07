@@ -4,8 +4,6 @@ import (
 	"context"
 	"time"
 
-	"uuid"
-
 	"github.com/humberto0/shopkeeper/internal/domain/user"
 )
 
@@ -19,6 +17,7 @@ type FindUserByIDResult struct {
 	Email     string
 	Role      user.Role
 	IsActive  bool
+	Version   int
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }
@@ -32,8 +31,8 @@ func NewFindUserByID(repo findUserRepository) *FindUserByID {
 }
 
 func (uc *FindUserByID) Execute(ctx context.Context, id string) (*FindUserByIDResult, error) {
-	if _, err := uuid.Parse(id); err != nil {
-		return nil, user.ErrInvalidID
+	if err := user.ValidateUserID(id); err != nil {
+		return nil, err
 	}
 
 	find, err := uc.repo.FindByID(ctx, id)
@@ -46,6 +45,7 @@ func (uc *FindUserByID) Execute(ctx context.Context, id string) (*FindUserByIDRe
 		Email:     find.Email(),
 		Role:      find.Role(),
 		IsActive:  find.IsActive(),
+		Version:   find.Version(),
 		CreatedAt: find.CreatedAt(),
 		UpdatedAt: find.UpdatedAt(),
 	}, nil
