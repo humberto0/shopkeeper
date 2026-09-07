@@ -1,5 +1,7 @@
 ### Variables
 @baseUrl = http://localhost:8080
+# After registering a user below, copy its "id" from the response into this variable.
+@id = 01a07a7f-fc8b-731e-882e-ffa52b84cc8a
 
 ### Health check — pings the database pool
 GET {{baseUrl}}/health
@@ -13,5 +15,19 @@ Content-Type: application/json
   "email": "humbertotest@shop.com",
   "password": "senha1234",
   "role": "owner"
+}
+
+### Find a user by id (update @id above with a real one first)
+GET {{baseUrl}}/users/{{id}}
+
+### Edit a user by id (update @id above with a real one first)
+PUT {{baseUrl}}/users/{{id}}
+Content-Type: application/json
+
+{
+  "name": "Humberto test edited2",
+  "email": "humbertotest.edited2@shop.com",
+  "role": "clerk",
+  "version": 1
 }
 

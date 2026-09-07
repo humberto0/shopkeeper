@@ -35,6 +35,7 @@ func writeDomainError(w http.ResponseWriter, r *http.Request, err error) {
 	case errors.Is(err, user.ErrInvalidName),
 		errors.Is(err, user.ErrInvalidEmail),
 		errors.Is(err, user.ErrWeakPassword),
+		errors.Is(err, user.ErrConflict),
 		errors.Is(err, user.ErrInvalidRole):
 		writeError(w, http.StatusUnprocessableEntity, err.Error())
 	case errors.Is(err, user.ErrNotFound):

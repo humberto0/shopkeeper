@@ -5,6 +5,7 @@ CREATE TABLE users (
     password_hash text        NOT NULL,
     role          text        NOT NULL,
     is_active     boolean     NOT NULL DEFAULT true,
+    version       int         NOT NULL DEFAULT  1,
     created_at    timestamptz NOT NULL,
     updated_at    timestamptz NOT NULL,
 

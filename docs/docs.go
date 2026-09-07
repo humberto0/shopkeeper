@@ -142,10 +142,119 @@ const docTemplate = `{
                         }
                     }
                 }
+            },
+            "put": {
+                "description": "Edit user account (owner or clerk). Version must match the current stored version (optimistic locking).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Edit an existing user",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "User fields to update",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handler.editUserRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handler.editUserResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "malformed request body or invalid id",
+                        "schema": {
+                            "$ref": "#/definitions/handler.errorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "user not found",
+                        "schema": {
+                            "$ref": "#/definitions/handler.errorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "email already exists",
+                        "schema": {
+                            "$ref": "#/definitions/handler.errorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "invalid name, email, role, or stale version",
+                        "schema": {
+                            "$ref": "#/definitions/handler.errorResponse"
+                        }
+                    }
+                }
             }
         }
     },
     "definitions": {
+        "handler.editUserRequest": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "example": "humberto@shop.com"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Humberto test"
+                },
+                "role": {
+                    "type": "string",
+                    "example": "owner"
+                },
+                "version": {
+                    "type": "integer",
+                    "example": 1
+                }
+            }
+        },
+        "handler.editUserResponse": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "example": "humberto@shop.com"
+                },
+                "id": {
+                    "type": "string",
+                    "example": "018f1d3a-7c3e-7c3e-8b3e-7c3e7c3e7c3e"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Humberto test"
+                },
+                "role": {
+                    "type": "string",
+                    "example": "owner"
+                },
+                "version": {
+                    "type": "integer",
+                    "example": 1
+                }
+            }
+        },
         "handler.errorResponse": {
             "type": "object",
             "properties": {
@@ -184,6 +293,10 @@ const docTemplate = `{
                 "updatedAt": {
                     "type": "string",
                     "example": "2020-01-01T00:00:00Z"
+                },
+                "version": {
+                    "type": "integer",
+                    "example": 1
                 }
             }
         },

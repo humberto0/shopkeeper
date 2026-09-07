@@ -53,11 +53,14 @@ func (r *UserRepository) Save(ctx context.Context, u *user.User) error {
 
 const updateUserQuery = `
 	UPDATE users
-	SET name = $2, email = $3, password_hash = $4, role = $5, is_active = $6, updated_at = $7
-	WHERE id = $1`
+	SET name = $2, email = $3, password_hash = $4, role = $5, is_active = $6, updated_at = $7, version = version + 1
+	WHERE id = $1 AND version = $8 RETURNING version`
+
+const existsByIDQuery = `SELECT EXISTS (SELECT 1 FROM users WHERE id = $1)`
 
 func (r *UserRepository) Update(ctx context.Context, u *user.User) error {
-	tag, err := r.pool.Exec(ctx, updateUserQuery,
+	var newVersion int
+	err := r.pool.QueryRow(ctx, updateUserQuery,
 		u.ID(),
 		u.Name(),
 		u.Email(),
@@ -65,21 +68,31 @@ func (r *UserRepository) Update(ctx context.Context, u *user.User) error {
 		string(u.Role()),
 		u.IsActive(),
 		u.UpdatedAt(),
-	)
+		u.Version(),
+	).Scan(&newVersion)
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			var exists bool
+			if err := r.pool.QueryRow(ctx, existsByIDQuery, u.ID()).Scan(&exists); err != nil {
+				return fmt.Errorf("checking if user exists: %w", err)
+			}
+			if !exists {
+				return user.ErrNotFound
+			}
+			return user.ErrConflict
+		}
 		if isUniqueViolation(err, emailUniqueIndex) {
 			return user.ErrEmailAlreadyExists
 		}
 		return fmt.Errorf("updating user: %w", err)
 	}
-	if tag.RowsAffected() == 0 {
-		return user.ErrNotFound
-	}
+
+	u.SetVersion(newVersion)
 	return nil
 }
 
 const findByIDQuery = `
-	SELECT id, name, email, password_hash, role, is_active, created_at, updated_at
+	SELECT id, name, email, password_hash, role, is_active, version, created_at, updated_at
 	FROM users WHERE id = $1`
 
 func (r *UserRepository) FindByID(ctx context.Context, id string) (*user.User, error) {
@@ -95,7 +108,7 @@ func (r *UserRepository) FindByID(ctx context.Context, id string) (*user.User, e
 }
 
 const findByEmailQuery = `
-	SELECT id, name, email, password_hash, role, is_active, created_at, updated_at
+	SELECT id, name, email, password_hash, role, is_active, version, created_at, updated_at
 	FROM users WHERE lower(email) = lower($1)`
 
 func (r *UserRepository) FindByEmail(ctx context.Context, email string) (*user.User, error) {
@@ -125,12 +138,13 @@ func scanUser(row pgx.Row) (*user.User, error) {
 	var (
 		id, name, email, passwordHash, role string
 		isActive                            bool
+		version                             int
 		createdAt, updatedAt                time.Time
 	)
-	if err := row.Scan(&id, &name, &email, &passwordHash, &role, &isActive, &createdAt, &updatedAt); err != nil {
+	if err := row.Scan(&id, &name, &email, &passwordHash, &role, &isActive, &version, &createdAt, &updatedAt); err != nil {
 		return nil, err
 	}
-	return user.Restore(id, name, email, passwordHash, user.Role(role), isActive, createdAt, updatedAt), nil
+	return user.Restore(id, name, email, passwordHash, user.Role(role), isActive, version, createdAt, updatedAt), nil
 }
 
 func isUniqueViolation(err error, constraint string) bool {

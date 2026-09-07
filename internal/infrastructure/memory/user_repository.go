@@ -45,6 +45,10 @@ func (r *UserRepository) Update(ctx context.Context, u *user.User) error {
 		return user.ErrNotFound
 	}
 
+	if existing.Version() != u.Version() {
+		return user.ErrConflict
+	}
+
 	if existing.Email() != u.Email() {
 		if _, taken := r.byEmail[u.Email()]; taken {
 			return user.ErrEmailAlreadyExists
@@ -53,6 +57,7 @@ func (r *UserRepository) Update(ctx context.Context, u *user.User) error {
 		r.byEmail[u.Email()] = u.ID()
 	}
 
+	u.SetVersion(existing.Version())
 	r.byID[u.ID()] = u
 	return nil
 }

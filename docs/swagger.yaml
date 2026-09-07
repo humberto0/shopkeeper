@@ -1,5 +1,38 @@
 basePath: /
 definitions:
+  handler.editUserRequest:
+    properties:
+      email:
+        example: humberto@shop.com
+        type: string
+      name:
+        example: Humberto test
+        type: string
+      role:
+        example: owner
+        type: string
+      version:
+        example: 1
+        type: integer
+    type: object
+  handler.editUserResponse:
+    properties:
+      email:
+        example: humberto@shop.com
+        type: string
+      id:
+        example: 018f1d3a-7c3e-7c3e-8b3e-7c3e7c3e7c3e
+        type: string
+      name:
+        example: Humberto test
+        type: string
+      role:
+        example: owner
+        type: string
+      version:
+        example: 1
+        type: integer
+    type: object
   handler.errorResponse:
     properties:
       error:
@@ -28,6 +61,9 @@ definitions:
       updatedAt:
         example: "2020-01-01T00:00:00Z"
         type: string
+      version:
+        example: 1
+        type: integer
     type: object
   handler.registerUserRequest:
     properties:
@@ -152,6 +188,49 @@ paths:
           schema:
             $ref: '#/definitions/handler.errorResponse'
       summary: Find User
+      tags:
+      - users
+    put:
+      consumes:
+      - application/json
+      description: Edit user account (owner or clerk). Version must match the current
+        stored version (optimistic locking).
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: User fields to update
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/handler.editUserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.editUserResponse'
+        "400":
+          description: malformed request body or invalid id
+          schema:
+            $ref: '#/definitions/handler.errorResponse'
+        "404":
+          description: user not found
+          schema:
+            $ref: '#/definitions/handler.errorResponse'
+        "409":
+          description: email already exists
+          schema:
+            $ref: '#/definitions/handler.errorResponse'
+        "422":
+          description: invalid name, email, role, or stale version
+          schema:
+            $ref: '#/definitions/handler.errorResponse'
+      summary: Edit an existing user
       tags:
       - users
 schemes:

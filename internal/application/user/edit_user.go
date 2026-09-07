@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	"uuid"
-
 	"github.com/humberto0/shopkeeper/internal/domain/user"
 )
 
@@ -17,17 +15,19 @@ type editUserRepository interface {
 }
 
 type EditUserInput struct {
-	ID    string
-	Name  string
-	Email string
-	Role  user.Role
+	ID      string
+	Name    string
+	Email   string
+	Role    user.Role
+	Version int
 }
 
 type EditUserOutput struct {
-	ID    string
-	Name  string
-	Email string
-	Role  user.Role
+	ID      string
+	Name    string
+	Email   string
+	Role    user.Role
+	Version int
 }
 
 type EditUser struct {
@@ -39,8 +39,8 @@ func NewEditUser(repo editUserRepository) *EditUser {
 }
 
 func (e *EditUser) Execute(ctx context.Context, in EditUserInput) (*EditUserOutput, error) {
-	if _, err := uuid.Parse(in.ID); err != nil {
-		return nil, user.ErrInvalidID
+	if err := user.ValidateUserID(in.ID); err != nil {
+		return nil, err
 	}
 
 	u, err := e.repo.FindByID(ctx, in.ID)
@@ -48,7 +48,11 @@ func (e *EditUser) Execute(ctx context.Context, in EditUserInput) (*EditUserOutp
 		return nil, err
 	}
 
-	if in.Email != "" && !strings.EqualFold(u.Email(), in.Email) {
+	if u.Version() != in.Version {
+		return nil, user.ErrConflict
+	}
+
+	if !strings.EqualFold(u.Email(), in.Email) {
 		exists, err := e.repo.ExistsByEmail(ctx, in.Email)
 		if err != nil {
 			return nil, fmt.Errorf("checking if email exists: %w", err)
@@ -74,9 +78,10 @@ func (e *EditUser) Execute(ctx context.Context, in EditUserInput) (*EditUserOutp
 	}
 
 	return &EditUserOutput{
-		ID:    u.ID(),
-		Name:  u.Name(),
-		Email: u.Email(),
-		Role:  u.Role(),
+		ID:      u.ID(),
+		Name:    u.Name(),
+		Email:   u.Email(),
+		Role:    u.Role(),
+		Version: u.Version(),
 	}, nil
 }
