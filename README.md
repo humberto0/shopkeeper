@@ -1,5 +1,10 @@
 # shopkeeper
 
+[![CI](https://github.com/humberto0/shopkeeper/actions/workflows/ci.yml/badge.svg)](https://github.com/humberto0/shopkeeper/actions/workflows/ci.yml)
+[![Go Report Card](https://goreportcard.com/badge/github.com/humberto0/shopkeeper)](https://goreportcard.com/report/github.com/humberto0/shopkeeper)
+[![Go Version](https://img.shields.io/github/go-mod/go-version/humberto0/shopkeeper)](go.mod)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 > Stock and sales management API for local shop owners, built with Go and PostgreSQL.
 
 **shopkeeper** is a REST API for small retail businesses — the corner store, the neighborhood bakery, the family-run shop. It handles the everyday essentials: knowing what's on the shelf, recording what was sold, and keeping a trustworthy history of every movement in between.
@@ -19,6 +24,7 @@ The project is intentionally built with Go's standard library at its core and a 
 - [API Documentation (Swagger)](#api-documentation-swagger)
 - [Getting Started](#getting-started)
 - [Roadmap](#roadmap)
+- [Contributing](#contributing)
 - [License](#license)
 
 ---
@@ -317,6 +323,12 @@ go test ./...
 - [ ] **Phase 6 — Purchasing:** suppliers and purchase orders
 - [ ] **Phase 7 — Reporting:** sales summaries, best sellers, low-stock report
 - [ ] **Phase 8 — Polish:** structured logging, integration tests, Docker Compose, CI
+
+---
+
+## Contributing
+
+Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for the local setup, coding conventions and the checks that run in CI before opening a pull request.
 
 ---
 
