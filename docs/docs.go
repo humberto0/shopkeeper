@@ -249,8 +249,17 @@ const docTemplate = `{
         "platformhttp.ErrorResponse": {
             "type": "object",
             "properties": {
+                "code": {
+                    "type": "string",
+                    "example": "user.not_found"
+                },
                 "error": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "user: not found"
+                },
+                "requestId": {
+                    "type": "string",
+                    "example": "0199d4a1-7c3e-7c3e-8b3e-7c3e7c3e7c3e"
                 }
             }
         },

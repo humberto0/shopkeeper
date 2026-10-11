@@ -126,7 +126,7 @@ func (h *UserHandler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 	var req registerUserRequest
 
 	if err := platformhttp.DecodeJSON(w, r, &req); err != nil {
-		platformhttp.WriteError(w, http.StatusBadRequest, err.Error())
+		platformhttp.WriteError(w, r, http.StatusBadRequest, platformhttp.CodeInvalidBody, err.Error())
 		return
 	}
 
@@ -245,7 +245,7 @@ func (h *UserHandler) Update(w http.ResponseWriter, r *http.Request) {
 	var req editUserRequest
 
 	if err := platformhttp.DecodeJSON(w, r, &req); err != nil {
-		platformhttp.WriteError(w, http.StatusBadRequest, err.Error())
+		platformhttp.WriteError(w, r, http.StatusBadRequest, platformhttp.CodeInvalidBody, err.Error())
 		return
 	}
 
