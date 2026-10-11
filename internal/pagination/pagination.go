@@ -1,4 +1,4 @@
-package shared
+package pagination
 
 const (
 	defaultLimit = 20
