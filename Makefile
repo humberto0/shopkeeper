@@ -1,7 +1,39 @@
-.PHONY: migrate-create migrate-up migrate-down migrate-version swag test-db-up test-integration test-e2e test test-coverage test-coverage-html test-coverage-check govulncheck
+.PHONY: fmt fmt-check lint typecheck build check migrate-create migrate-up migrate-down migrate-version swag db-up test-db-up test-integration test-e2e test test-coverage test-coverage-html test-coverage-check govulncheck
 
 DATABASE_URL ?= postgres://shopkeeper:shopkeeper@localhost:5432/shopkeeper?sslmode=disable
 TEST_DATABASE_URL ?= postgres://shopkeeper:shopkeeper@localhost:5433/shopkeeper_test?sslmode=disable
+
+# Canonical "definition of done" targets: CI, lefthook and local sessions
+# all run these, so the commands live in one place.
+
+# goimports runs through golangci-lint so it uses the local-prefixes from
+# golangci.yml instead of a separately installed binary with its own defaults.
+fmt:
+	gofmt -l -w .
+	golangci-lint fmt
+
+fmt-check:
+	@unformatted=$$(gofmt -l .); \
+	if [ -n "$$unformatted" ]; then \
+		echo "files not formatted with gofmt (run make fmt):"; \
+		echo "$$unformatted"; \
+		exit 1; \
+	fi
+
+lint:
+	golangci-lint run
+
+# The compiler already type-checks during build; go vet adds the static
+# checks the compiler does not do (printf args, struct tags, copied locks).
+typecheck:
+	go vet ./...
+
+# Same flags as the Dockerfile, so the local binary matches the image.
+build:
+	CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o bin/api ./cmd/api
+
+# check is the single local pre-push command.
+check: fmt-check lint typecheck test
 
 swag:
 	go run github.com/swaggo/swag/cmd/swag init -g cmd/api/main.go -o docs --parseInternal
