@@ -18,33 +18,6 @@
     },
     "basePath": "/",
     "paths": {
-        "/health": {
-            "get": {
-                "description": "Same behavior as /health/ready. Use /health/ready for readiness and /health/live for liveness.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "health"
-                ],
-                "summary": "Health check (alias of /health/ready)",
-                "deprecated": true,
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/platformhttp.HealthResponse"
-                        }
-                    },
-                    "503": {
-                        "description": "code: health.database_unavailable",
-                        "schema": {
-                            "$ref": "#/definitions/platformhttp.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
         "/health/live": {
             "get": {
                 "description": "Reports that the process is up. It checks no dependencies, so a database outage never makes an orchestrator restart the API.",

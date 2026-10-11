@@ -228,7 +228,6 @@ Health probes:
 
 - `GET /health/live` — liveness: the process is up; checks no dependencies. Point restart-on-failure probes here.
 - `GET /health/ready` — readiness: pings the database (2 s timeout); answers 503 with `code: health.database_unavailable` while it is unreachable. Point traffic-routing probes here.
-- `GET /health` — deprecated alias of `/health/ready`, kept for existing callers.
 
 Planned surface (v1):
 

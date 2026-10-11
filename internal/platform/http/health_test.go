@@ -83,13 +83,11 @@ func TestHealthHandler_Ready(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			h := NewHealthHandler(tt.pinger)
 
-			for _, route := range []http.HandlerFunc{h.Ready, h.Health} {
-				rec := serveHealth(t, route)
-				if tt.ok {
-					assertStatusOK(t, rec)
-				} else {
-					assertDatabaseUnavailable(t, rec)
-				}
+			rec := serveHealth(t, h.Ready)
+			if tt.ok {
+				assertStatusOK(t, rec)
+			} else {
+				assertDatabaseUnavailable(t, rec)
 			}
 		})
 	}

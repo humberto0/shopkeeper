@@ -68,19 +68,3 @@ func (h *HealthHandler) Ready(w http.ResponseWriter, r *http.Request) {
 	}
 	WriteJSON(w, http.StatusOK, HealthResponse{Status: "ok"})
 }
-
-// Health godoc
-//
-// Health is the legacy GET /health route, kept as an alias of Ready.
-//
-//	@Summary		Health check (alias of /health/ready)
-//	@Description	Same behavior as /health/ready. Use /health/ready for readiness and /health/live for liveness.
-//	@Tags			health
-//	@Produce		json
-//	@Success		200	{object}	platformhttp.HealthResponse
-//	@Failure		503	{object}	platformhttp.ErrorResponse	"code: health.database_unavailable"
-//	@Deprecated
-//	@Router			/health [get]
-func (h *HealthHandler) Health(w http.ResponseWriter, r *http.Request) {
-	h.Ready(w, r)
-}

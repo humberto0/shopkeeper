@@ -13,7 +13,6 @@ import (
 func NewRouter(mux *http.ServeMux, health *HealthHandler, corsAllowedOrigins []string) http.Handler {
 	mux.HandleFunc("GET /health/live", health.Live)
 	mux.HandleFunc("GET /health/ready", health.Ready)
-	mux.HandleFunc("GET /health", health.Health)
 	mux.Handle("GET /swagger/", httpSwagger.WrapHandler)
 
 	return RequestID(
