@@ -51,10 +51,18 @@ func run() error {
 	}
 	defer pool.Close()
 
+	// Read from the parsed config so the DSN (and its password) never
+	// reaches the log.
+	connCfg := pool.Config().ConnConfig
+	dsnSource := "DATABASE_URL"
+	if cfg.Database.FromParts {
+		dsnSource = "DB_* fallback"
+	}
 	logger.Info("connected to database",
-		"host", cfg.Database.Host,
-		"port", cfg.Database.Port,
-		"name", cfg.Database.Name,
+		"host", connCfg.Host,
+		"port", connCfg.Port,
+		"name", connCfg.Database,
+		"dsn_source", dsnSource,
 	)
 
 	mux := http.NewServeMux()
