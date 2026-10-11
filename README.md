@@ -218,6 +218,16 @@ Mirror the sales structure, referencing `suppliers` and feeding inbound stock mo
 - Indexes on `stock_movements(product_id, created_at)`, `sales(created_at)` and `sale_items(sale_id)`.
 - Monetary values are stored as integer cents to avoid floating-point drift.
 
+### Constraint and index naming
+
+Constraint and index names are stable identifiers: the repositories translate database errors by name (e.g. a unique violation on `users_email_unique_idx` becomes `ErrEmailAlreadyExists`), so every new table follows the same pattern.
+
+| Kind | Pattern | Example |
+|---|---|---|
+| Check constraint | `<table>_<column>_<rule>_check` | `users_name_not_blank_check`, `users_role_valid_check` |
+| Unique index | `<table>_<columns>_unique_idx` | `users_email_unique_idx` |
+| Foreign key | `<table>_<column>_fkey` | `sales_customer_id_fkey` |
+
 ---
 
 ## API Endpoints
