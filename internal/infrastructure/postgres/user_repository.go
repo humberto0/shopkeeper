@@ -134,6 +134,43 @@ func (r *UserRepository) ExistsByEmail(ctx context.Context, email string) (bool,
 	return exists, nil
 }
 
+const countUsersQuery = `SELECT count(*) FROM users`
+
+// id breaks ties between rows created in the same instant, so pages never
+// overlap or skip rows.
+const listUsersQuery = `
+	SELECT id, name, email, password_hash, role, is_active, version, created_at, updated_at
+	FROM users
+	ORDER BY created_at DESC, id DESC
+	LIMIT $1 OFFSET $2`
+
+func (r *UserRepository) List(ctx context.Context, limit, offset int) ([]*user.User, int, error) {
+	var total int
+	if err := r.pool.QueryRow(ctx, countUsersQuery).Scan(&total); err != nil {
+		return nil, 0, fmt.Errorf("counting users: %w", err)
+	}
+
+	rows, err := r.pool.Query(ctx, listUsersQuery, limit, offset)
+	if err != nil {
+		return nil, 0, fmt.Errorf("listing users: %w", err)
+	}
+	defer rows.Close()
+
+	users := make([]*user.User, 0, limit)
+	for rows.Next() {
+		u, err := scanUser(rows)
+		if err != nil {
+			return nil, 0, fmt.Errorf("scanning user: %w", err)
+		}
+		users = append(users, u)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, 0, fmt.Errorf("iterating users: %w", err)
+	}
+
+	return users, total, nil
+}
+
 func scanUser(row pgx.Row) (*user.User, error) {
 	var (
 		id, name, email, passwordHash, role string

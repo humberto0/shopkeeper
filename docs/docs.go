@@ -52,6 +52,43 @@ const docTemplate = `{
             }
         },
         "/users": {
+            "get": {
+                "description": "Lists users newest first, paginated by page number. Out-of-range values are normalized: page \u003c 1 becomes 1, limit defaults to 20 and is capped at 100. A page past the last one returns an empty items array.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "List users",
+                "parameters": [
+                    {
+                        "minimum": 1,
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Page number, starting at 1",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "maximum": 100,
+                        "minimum": 1,
+                        "type": "integer",
+                        "default": 20,
+                        "description": "Items per page",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handler.listUsersResponse"
+                        }
+                    }
+                }
+            },
             "post": {
                 "description": "Creates a new user account (owner or clerk).",
                 "consumes": [
@@ -297,6 +334,33 @@ const docTemplate = `{
                 "version": {
                     "type": "integer",
                     "example": 1
+                }
+            }
+        },
+        "handler.listUsersResponse": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/handler.findUserResponse"
+                    }
+                },
+                "limit": {
+                    "type": "integer",
+                    "example": 20
+                },
+                "page": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "totalItems": {
+                    "type": "integer",
+                    "example": 57
+                },
+                "totalPages": {
+                    "type": "integer",
+                    "example": 3
                 }
             }
         },

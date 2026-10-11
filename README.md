@@ -214,10 +214,17 @@ Mirror the sales structure, referencing `suppliers` and feeding inbound stock mo
 
 ## API Endpoints
 
+List endpoints are paginated. `GET /users` uses offset pagination (`page` starts at 1, `limit` defaults to 20 and is capped at 100) and returns `{ "items": [...], "page", "limit", "totalItems", "totalPages" }`.
+
 Planned surface (v1):
 
 ```
 POST   /auth/login
+
+GET    /users                ?page=1&limit=20 (implemented)
+POST   /users                (implemented)
+GET    /users/{id}           (implemented)
+PUT    /users/{id}           (implemented)
 
 GET    /products
 POST   /products

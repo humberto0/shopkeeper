@@ -5,26 +5,41 @@ on:
     branches: [main]
   pull_request:
 
+# Cancel a running job when new commits are pushed to the same branch —
+# there is no point in testing a commit that is already superseded.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  MIGRATE_VERSION: v4.18.1
+
 jobs:
   lint:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
-      - run: go vet ./...
-      - uses: golangci/golangci-lint-action@v7
+          cache: true
+      - uses: golangci/golangci-lint-action@v9
         with:
           version: v2.14.0
 
   govulncheck:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
+          cache: true
+
       - run: make govulncheck
 
   test:
@@ -49,13 +64,17 @@ jobs:
       TEST_DATABASE_URL: postgres://shopkeeper:shopkeeper@localhost:5433/shopkeeper_test?sslmode=disable
 
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
+          cache: true
 
+      # Pinned: @latest would let an upstream release break CI on a commit
+      # that changed nothing.
       - name: Install migrate CLI
-        run: go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
+        run: go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@${{ env.MIGRATE_VERSION }}
 
       - name: Run migrations
         run: migrate -path migrations -database "$TEST_DATABASE_URL" up
@@ -64,7 +83,8 @@ jobs:
         run: make test-coverage-check
 
       - name: Upload coverage report
-        uses: actions/upload-artifact@v4
+        if: always()
+        uses: actions/upload-artifact@v7
         with:
           name: coverage
           path: coverage.out

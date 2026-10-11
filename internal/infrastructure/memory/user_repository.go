@@ -1,7 +1,9 @@
 package memory
 
 import (
+	"cmp"
 	"context"
+	"slices"
 	"strings"
 	"sync"
 
@@ -90,6 +92,36 @@ func (r *UserRepository) ExistsByEmail(ctx context.Context, email string) (bool,
 
 	_, ok := r.byEmail[normalizeEmail(email)]
 	return ok, nil
+}
+
+// List mirrors the Postgres ordering (created_at DESC, id DESC) so use case
+// tests see the same pages they would against the real database.
+func (r *UserRepository) List(ctx context.Context, limit, offset int) ([]*user.User, int, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	all := make([]*user.User, 0, len(r.byID))
+	for _, u := range r.byID {
+		all = append(all, u)
+	}
+	slices.SortFunc(all, func(a, b *user.User) int {
+		if c := b.CreatedAt().Compare(a.CreatedAt()); c != 0 {
+			return c
+		}
+		return cmp.Compare(b.ID(), a.ID())
+	})
+
+	total := len(all)
+	if offset >= total {
+		return []*user.User{}, total, nil
+	}
+	end := min(offset+limit, total)
+
+	page := make([]*user.User, 0, end-offset)
+	for _, u := range all[offset:end] {
+		page = append(page, clone(u))
+	}
+	return page, total, nil
 }
 
 func (r *UserRepository) Reset() {
