@@ -26,9 +26,28 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
+
+      # The action (not make lint) runs the linter because it caches the
+      # analysis between runs; the version stays pinned.
       - uses: golangci/golangci-lint-action@v9
         with:
           version: v2.14.0
+
+      - run: make typecheck
+
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - run: make build
 
   govulncheck:
     runs-on: ubuntu-latest
