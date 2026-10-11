@@ -1,17 +1,14 @@
-package handler
+package userhttp
 
 import (
 	"context"
-	"encoding/json"
-	"errors"
-	"io"
-	"mime"
 	"net/http"
 	"strconv"
 	"time"
 
-	userapp "github.com/humberto0/shopkeeper/internal/application/user"
-	"github.com/humberto0/shopkeeper/internal/domain/user"
+	platformhttp "github.com/humberto0/shopkeeper/internal/platform/http"
+	userapp "github.com/humberto0/shopkeeper/internal/user/application"
+	user "github.com/humberto0/shopkeeper/internal/user/domain"
 )
 
 type registerUserUseCase interface {
@@ -49,6 +46,14 @@ func NewUserHandler(
 		editUser:     editUser,
 		listUsers:    listUsers,
 	}
+}
+
+// Register wires the user routes into mux.
+func (h *UserHandler) Register(mux *http.ServeMux) {
+	mux.HandleFunc("GET /users", h.List)
+	mux.HandleFunc("POST /users", h.RegisterUser)
+	mux.HandleFunc("GET /users/{id}", h.Find)
+	mux.HandleFunc("PUT /users/{id}", h.Update)
 }
 
 // registerUserRequest is the payload to create a new user.
@@ -104,7 +109,7 @@ type listUsersResponse struct {
 	TotalPages int                `json:"totalPages" example:"3"`
 }
 
-// Register godoc
+// RegisterUser godoc
 //
 //	@Summary		Register a new user
 //	@Description	Creates a new user account (owner or clerk).
@@ -113,15 +118,15 @@ type listUsersResponse struct {
 //	@Produce		json
 //	@Param			request	body		registerUserRequest		true	"User to register"
 //	@Success		201		{object}	registerUserResponse
-//	@Failure		400		{object}	errorResponse	"malformed request body"
-//	@Failure		409		{object}	errorResponse	"email already exists"
-//	@Failure		422		{object}	errorResponse	"invalid name, email, password or role"
+//	@Failure		400		{object}	platformhttp.ErrorResponse	"malformed request body"
+//	@Failure		409		{object}	platformhttp.ErrorResponse	"email already exists"
+//	@Failure		422		{object}	platformhttp.ErrorResponse	"invalid name, email, password or role"
 //	@Router			/users [post]
-func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
+func (h *UserHandler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 	var req registerUserRequest
 
-	if err := decodeJSON(w, r, &req); err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+	if err := platformhttp.DecodeJSON(w, r, &req); err != nil {
+		platformhttp.WriteError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -136,7 +141,7 @@ func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusCreated, registerUserResponse{
+	platformhttp.WriteJSON(w, http.StatusCreated, registerUserResponse{
 		ID:    out.ID,
 		Name:  out.Name,
 		Email: out.Email,
@@ -152,8 +157,8 @@ func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 //	@Produce		json
 //	@Param			id	path		string	true	"User ID"
 //	@Success		200	{object}	findUserResponse
-//	@Failure		400	{object}	errorResponse	"malformed id"
-//	@Failure		404	{object}	errorResponse	"user not found"
+//	@Failure		400	{object}	platformhttp.ErrorResponse	"malformed id"
+//	@Failure		404	{object}	platformhttp.ErrorResponse	"user not found"
 //	@Router			/users/{id} [get]
 func (h *UserHandler) Find(w http.ResponseWriter, r *http.Request) {
 	u, err := h.findUser.Execute(r.Context(), r.PathValue("id"))
@@ -162,7 +167,7 @@ func (h *UserHandler) Find(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, findUserResponse{
+	platformhttp.WriteJSON(w, http.StatusOK, findUserResponse{
 		ID:        u.ID,
 		Name:      u.Name,
 		Email:     u.Email,
@@ -211,7 +216,7 @@ func (h *UserHandler) List(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	writeJSON(w, http.StatusOK, listUsersResponse{
+	platformhttp.WriteJSON(w, http.StatusOK, listUsersResponse{
 		Items:      items,
 		Page:       out.Page,
 		Limit:      out.Limit,
@@ -230,17 +235,17 @@ func (h *UserHandler) List(w http.ResponseWriter, r *http.Request) {
 //	@Param			id		path		string				true	"User ID"
 //	@Param			request	body		editUserRequest		true	"User fields to update"
 //	@Success		200		{object}	editUserResponse
-//	@Failure		400		{object}	errorResponse	"malformed request body or invalid id"
-//	@Failure		404		{object}	errorResponse	"user not found"
-//	@Failure		409		{object}	errorResponse	"email already exists"
-//	@Failure		422		{object}	errorResponse	"invalid name, email, role, or stale version"
+//	@Failure		400		{object}	platformhttp.ErrorResponse	"malformed request body or invalid id"
+//	@Failure		404		{object}	platformhttp.ErrorResponse	"user not found"
+//	@Failure		409		{object}	platformhttp.ErrorResponse	"email already exists"
+//	@Failure		422		{object}	platformhttp.ErrorResponse	"invalid name, email, role, or stale version"
 //	@Router			/users/{id} [put]
 func (h *UserHandler) Update(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	var req editUserRequest
 
-	if err := decodeJSON(w, r, &req); err != nil {
-		writeError(w, http.StatusBadRequest, err.Error())
+	if err := platformhttp.DecodeJSON(w, r, &req); err != nil {
+		platformhttp.WriteError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -256,40 +261,11 @@ func (h *UserHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, editUserResponse{
+	platformhttp.WriteJSON(w, http.StatusOK, editUserResponse{
 		ID:      u.ID,
 		Name:    u.Name,
 		Email:   u.Email,
 		Role:    string(u.Role),
 		Version: u.Version,
 	})
-
-}
-
-const maxRequestBodySize = 1 << 20
-
-func decodeJSON(w http.ResponseWriter, r *http.Request, dst any) error {
-
-	if ct := r.Header.Get("Content-Type"); ct != "" {
-		mediaType, _, _ := mime.ParseMediaType(ct)
-		if mediaType != "application/json" {
-			return errors.New("content-type must be application/json")
-		}
-	}
-
-	r.Body = http.MaxBytesReader(w, r.Body, maxRequestBodySize)
-
-	dec := json.NewDecoder(r.Body)
-
-	dec.DisallowUnknownFields()
-
-	if err := dec.Decode(dst); err != nil {
-		return errors.New("invalid JSON body")
-	}
-
-	if err := dec.Decode(&struct{}{}); err != io.EOF {
-		return errors.New("body must contain a single JSON object")
-	}
-
-	return nil
 }

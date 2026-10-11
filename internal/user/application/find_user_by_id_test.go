@@ -1,20 +1,20 @@
-package user
+package userapp
 
 import (
 	"context"
 	"errors"
 	"testing"
 
-	domainuser "github.com/humberto0/shopkeeper/internal/domain/user"
-	"github.com/humberto0/shopkeeper/internal/infrastructure/memory"
+	user "github.com/humberto0/shopkeeper/internal/user/domain"
+	usermem "github.com/humberto0/shopkeeper/internal/user/memory"
 )
 
 func TestFindUserByID_Success(t *testing.T) {
 	ctx := context.Background()
-	repo := memory.NewUserRepository()
+	repo := usermem.NewUserRepository()
 	uc := NewFindUserByID(repo)
 
-	u, err := domainuser.New("Humberto", "humberto@shop.com", "test1234", domainuser.RoleOwner)
+	u, err := user.New("Humberto", "humberto@shop.com", "test1234", user.RoleOwner)
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
@@ -35,8 +35,8 @@ func TestFindUserByID_Success(t *testing.T) {
 	if find.Role != u.Role() {
 		t.Fatalf("expected user role %s, got %s", u.Role(), find.Role)
 	}
-	if find.Role != domainuser.RoleOwner {
-		t.Fatalf("expected user role %s, got %s", domainuser.RoleOwner, find.Role)
+	if find.Role != user.RoleOwner {
+		t.Fatalf("expected user role %s, got %s", user.RoleOwner, find.Role)
 	}
 	if find.ID != u.ID() {
 		t.Fatalf("expected user id %s, got %s", u.ID(), find.ID)
@@ -48,12 +48,12 @@ func TestFindUserByID_Success(t *testing.T) {
 
 func TestFindUserByID_MalformedID(t *testing.T) {
 	ctx := context.Background()
-	repo := memory.NewUserRepository()
+	repo := usermem.NewUserRepository()
 	uc := NewFindUserByID(repo)
 
 	find, err := uc.Execute(ctx, "not-a-uuid")
-	if !errors.Is(err, domainuser.ErrInvalidID) {
-		t.Fatalf("expected %v, got %v", domainuser.ErrInvalidID, err)
+	if !errors.Is(err, user.ErrInvalidID) {
+		t.Fatalf("expected %v, got %v", user.ErrInvalidID, err)
 	}
 	if find != nil {
 		t.Fatalf("expected nil result, got %v", find)
@@ -62,12 +62,12 @@ func TestFindUserByID_MalformedID(t *testing.T) {
 
 func TestFindUserByID_NotFound(t *testing.T) {
 	ctx := context.Background()
-	repo := memory.NewUserRepository()
+	repo := usermem.NewUserRepository()
 	uc := NewFindUserByID(repo)
 
 	find, err := uc.Execute(ctx, "00000000-0000-0000-0000-000000000000")
-	if !errors.Is(err, domainuser.ErrNotFound) {
-		t.Fatalf("expected %v, got %v", domainuser.ErrNotFound, err)
+	if !errors.Is(err, user.ErrNotFound) {
+		t.Fatalf("expected %v, got %v", user.ErrNotFound, err)
 	}
 	if find != nil {
 		t.Fatalf("expected nil result, got %v", find)

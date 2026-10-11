@@ -1,4 +1,4 @@
-package memory
+package usermem
 
 import (
 	"cmp"
@@ -7,7 +7,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/humberto0/shopkeeper/internal/domain/user"
+	user "github.com/humberto0/shopkeeper/internal/user/domain"
 )
 
 var _ user.Repository = (*UserRepository)(nil)

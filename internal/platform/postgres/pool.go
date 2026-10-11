@@ -6,7 +6,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/humberto0/shopkeeper/internal/infrastructure/config"
+	"github.com/humberto0/shopkeeper/internal/platform/config"
 )
 
 func NewPool(ctx context.Context, cfg config.DatabaseConfig) (*pgxpool.Pool, error) {

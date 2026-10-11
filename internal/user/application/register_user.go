@@ -1,10 +1,10 @@
-package user
+package userapp
 
 import (
 	"context"
 	"fmt"
 
-	"github.com/humberto0/shopkeeper/internal/domain/user"
+	user "github.com/humberto0/shopkeeper/internal/user/domain"
 )
 
 type registerUserRepository interface {

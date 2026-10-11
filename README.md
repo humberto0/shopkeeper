@@ -78,20 +78,28 @@ No web framework, no ORM. Queries are written in SQL, on purpose.
 
 ## Architecture
 
-A pragmatic layered design:
+A feature-first layout: cross-cutting code lives in `internal/platform`, and each bounded context owns a folder with its own layers.
 
 ```
-cmd/api/            → entry point, wiring, server startup
+cmd/api/              → composition root: config, pool, contexts, router, server
 internal/
-  domain/           → entities and business rules (no external dependencies)
-  repository/       → data access, SQL queries, transactions
-  service/          → use cases, orchestration across repositories
-  handler/          → HTTP handlers, request parsing, response encoding
-  middleware/       → auth, logging, recovery
-migrations/         → versioned SQL migrations
+  platform/           → shared infrastructure, no business rules
+    config/           → configuration loaded from env vars
+    http/             → router, middlewares (request ID, logging, recovery, CORS), JSON helpers
+    postgres/         → pgx connection pool
+    pagination/       → offset pagination
+    id/               → ID validation
+  user/               → user context
+    domain/           → entity, sentinel errors, repository interfaces (package user)
+    application/      → one use case per file (package userapp)
+    postgres/         → pgx repository (package userpg)
+    memory/           → in-memory repository for unit tests (package usermem)
+    http/             → handler, DTOs, error mapping, Register(mux) (package userhttp)
+migrations/           → versioned SQL migrations
+test/                 → integration and e2e tests against a real Postgres
 ```
 
-Dependencies point inward: handlers depend on services, services depend on repository interfaces, and the domain depends on nothing.
+Dependencies point inward: `http` depends on `application`, `application` depends on the repository interfaces in `domain`, and `domain` depends on nothing but `platform/id`. `platform` never imports a context. A new context (product, order…) gets its own folder with the same shape and registers its routes in `cmd/api/main.go`.
 
 ---
 
@@ -276,7 +284,7 @@ The raw OpenAPI spec is also available at `http://localhost:8080/swagger/doc.jso
 
 ### Regenerating the docs
 
-The Swagger spec lives in `docs/` and is generated from the `@...` comments above handler functions (see `cmd/api/main.go` and `internal/infrastructure/http/handler/user_handler.go`). Whenever you add or change a route, update its annotations and regenerate:
+The Swagger spec lives in `docs/` and is generated from the `@...` comments above handler functions (see `cmd/api/main.go` and `internal/user/http/handler.go`). Whenever you add or change a route, update its annotations and regenerate:
 
 ```bash
 make swag

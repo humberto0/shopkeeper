@@ -84,7 +84,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handler.listUsersResponse"
+                            "$ref": "#/definitions/userhttp.listUsersResponse"
                         }
                     }
                 }
@@ -108,7 +108,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handler.registerUserRequest"
+                            "$ref": "#/definitions/userhttp.registerUserRequest"
                         }
                     }
                 ],
@@ -116,25 +116,25 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/handler.registerUserResponse"
+                            "$ref": "#/definitions/userhttp.registerUserResponse"
                         }
                     },
                     "400": {
                         "description": "malformed request body",
                         "schema": {
-                            "$ref": "#/definitions/handler.errorResponse"
+                            "$ref": "#/definitions/platformhttp.ErrorResponse"
                         }
                     },
                     "409": {
                         "description": "email already exists",
                         "schema": {
-                            "$ref": "#/definitions/handler.errorResponse"
+                            "$ref": "#/definitions/platformhttp.ErrorResponse"
                         }
                     },
                     "422": {
                         "description": "invalid name, email, password or role",
                         "schema": {
-                            "$ref": "#/definitions/handler.errorResponse"
+                            "$ref": "#/definitions/platformhttp.ErrorResponse"
                         }
                     }
                 }
@@ -163,19 +163,19 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handler.findUserResponse"
+                            "$ref": "#/definitions/userhttp.findUserResponse"
                         }
                     },
                     "400": {
                         "description": "malformed id",
                         "schema": {
-                            "$ref": "#/definitions/handler.errorResponse"
+                            "$ref": "#/definitions/platformhttp.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "user not found",
                         "schema": {
-                            "$ref": "#/definitions/handler.errorResponse"
+                            "$ref": "#/definitions/platformhttp.ErrorResponse"
                         }
                     }
                 }
@@ -206,7 +206,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handler.editUserRequest"
+                            "$ref": "#/definitions/userhttp.editUserRequest"
                         }
                     }
                 ],
@@ -214,31 +214,31 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/handler.editUserResponse"
+                            "$ref": "#/definitions/userhttp.editUserResponse"
                         }
                     },
                     "400": {
                         "description": "malformed request body or invalid id",
                         "schema": {
-                            "$ref": "#/definitions/handler.errorResponse"
+                            "$ref": "#/definitions/platformhttp.ErrorResponse"
                         }
                     },
                     "404": {
                         "description": "user not found",
                         "schema": {
-                            "$ref": "#/definitions/handler.errorResponse"
+                            "$ref": "#/definitions/platformhttp.ErrorResponse"
                         }
                     },
                     "409": {
                         "description": "email already exists",
                         "schema": {
-                            "$ref": "#/definitions/handler.errorResponse"
+                            "$ref": "#/definitions/platformhttp.ErrorResponse"
                         }
                     },
                     "422": {
                         "description": "invalid name, email, role, or stale version",
                         "schema": {
-                            "$ref": "#/definitions/handler.errorResponse"
+                            "$ref": "#/definitions/platformhttp.ErrorResponse"
                         }
                     }
                 }
@@ -246,7 +246,15 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "handler.editUserRequest": {
+        "platformhttp.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string"
+                }
+            }
+        },
+        "userhttp.editUserRequest": {
             "type": "object",
             "properties": {
                 "email": {
@@ -267,7 +275,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handler.editUserResponse": {
+        "userhttp.editUserResponse": {
             "type": "object",
             "properties": {
                 "email": {
@@ -292,15 +300,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handler.errorResponse": {
-            "type": "object",
-            "properties": {
-                "error": {
-                    "type": "string"
-                }
-            }
-        },
-        "handler.findUserResponse": {
+        "userhttp.findUserResponse": {
             "type": "object",
             "properties": {
                 "createdAt": {
@@ -337,13 +337,13 @@ const docTemplate = `{
                 }
             }
         },
-        "handler.listUsersResponse": {
+        "userhttp.listUsersResponse": {
             "type": "object",
             "properties": {
                 "items": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/handler.findUserResponse"
+                        "$ref": "#/definitions/userhttp.findUserResponse"
                     }
                 },
                 "limit": {
@@ -364,7 +364,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handler.registerUserRequest": {
+        "userhttp.registerUserRequest": {
             "type": "object",
             "properties": {
                 "email": {
@@ -389,7 +389,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handler.registerUserResponse": {
+        "userhttp.registerUserResponse": {
             "type": "object",
             "properties": {
                 "email": {

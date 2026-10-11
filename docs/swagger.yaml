@@ -1,6 +1,11 @@
 basePath: /
 definitions:
-  handler.editUserRequest:
+  platformhttp.ErrorResponse:
+    properties:
+      error:
+        type: string
+    type: object
+  userhttp.editUserRequest:
     properties:
       email:
         example: humberto@shop.com
@@ -15,7 +20,7 @@ definitions:
         example: 1
         type: integer
     type: object
-  handler.editUserResponse:
+  userhttp.editUserResponse:
     properties:
       email:
         example: humberto@shop.com
@@ -33,12 +38,7 @@ definitions:
         example: 1
         type: integer
     type: object
-  handler.errorResponse:
-    properties:
-      error:
-        type: string
-    type: object
-  handler.findUserResponse:
+  userhttp.findUserResponse:
     properties:
       createdAt:
         example: "2020-01-01T00:00:00Z"
@@ -65,11 +65,11 @@ definitions:
         example: 1
         type: integer
     type: object
-  handler.listUsersResponse:
+  userhttp.listUsersResponse:
     properties:
       items:
         items:
-          $ref: '#/definitions/handler.findUserResponse'
+          $ref: '#/definitions/userhttp.findUserResponse'
         type: array
       limit:
         example: 20
@@ -84,7 +84,7 @@ definitions:
         example: 3
         type: integer
     type: object
-  handler.registerUserRequest:
+  userhttp.registerUserRequest:
     properties:
       email:
         example: humbertotest@shop.com
@@ -102,7 +102,7 @@ definitions:
         example: owner
         type: string
     type: object
-  handler.registerUserResponse:
+  userhttp.registerUserResponse:
     properties:
       email:
         example: humbertotest@shop.com
@@ -173,7 +173,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handler.listUsersResponse'
+            $ref: '#/definitions/userhttp.listUsersResponse'
       summary: List users
       tags:
       - users
@@ -187,26 +187,26 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/handler.registerUserRequest'
+          $ref: '#/definitions/userhttp.registerUserRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/handler.registerUserResponse'
+            $ref: '#/definitions/userhttp.registerUserResponse'
         "400":
           description: malformed request body
           schema:
-            $ref: '#/definitions/handler.errorResponse'
+            $ref: '#/definitions/platformhttp.ErrorResponse'
         "409":
           description: email already exists
           schema:
-            $ref: '#/definitions/handler.errorResponse'
+            $ref: '#/definitions/platformhttp.ErrorResponse'
         "422":
           description: invalid name, email, password or role
           schema:
-            $ref: '#/definitions/handler.errorResponse'
+            $ref: '#/definitions/platformhttp.ErrorResponse'
       summary: Register a new user
       tags:
       - users
@@ -225,15 +225,15 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handler.findUserResponse'
+            $ref: '#/definitions/userhttp.findUserResponse'
         "400":
           description: malformed id
           schema:
-            $ref: '#/definitions/handler.errorResponse'
+            $ref: '#/definitions/platformhttp.ErrorResponse'
         "404":
           description: user not found
           schema:
-            $ref: '#/definitions/handler.errorResponse'
+            $ref: '#/definitions/platformhttp.ErrorResponse'
       summary: Find User
       tags:
       - users
@@ -253,30 +253,30 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/handler.editUserRequest'
+          $ref: '#/definitions/userhttp.editUserRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/handler.editUserResponse'
+            $ref: '#/definitions/userhttp.editUserResponse'
         "400":
           description: malformed request body or invalid id
           schema:
-            $ref: '#/definitions/handler.errorResponse'
+            $ref: '#/definitions/platformhttp.ErrorResponse'
         "404":
           description: user not found
           schema:
-            $ref: '#/definitions/handler.errorResponse'
+            $ref: '#/definitions/platformhttp.ErrorResponse'
         "409":
           description: email already exists
           schema:
-            $ref: '#/definitions/handler.errorResponse'
+            $ref: '#/definitions/platformhttp.ErrorResponse'
         "422":
           description: invalid name, email, role, or stale version
           schema:
-            $ref: '#/definitions/handler.errorResponse'
+            $ref: '#/definitions/platformhttp.ErrorResponse'
       summary: Edit an existing user
       tags:
       - users

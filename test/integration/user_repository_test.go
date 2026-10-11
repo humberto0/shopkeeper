@@ -9,8 +9,8 @@ import (
 
 	"uuid"
 
-	"github.com/humberto0/shopkeeper/internal/domain/user"
-	"github.com/humberto0/shopkeeper/internal/infrastructure/postgres"
+	user "github.com/humberto0/shopkeeper/internal/user/domain"
+	userpg "github.com/humberto0/shopkeeper/internal/user/postgres"
 )
 
 func newTestUser(t *testing.T, email string) *user.User {
@@ -27,7 +27,7 @@ func TestUserRepository_SaveAndFindByID(t *testing.T) {
 	truncateUsers(t)
 
 	ctx := context.Background()
-	repo := postgres.NewUserRepository(testPool)
+	repo := userpg.NewUserRepository(testPool)
 
 	created := newTestUser(t, "humberto@shop.com")
 
@@ -76,7 +76,7 @@ func TestUserRepository_FindByID_NotFound(t *testing.T) {
 	truncateUsers(t)
 
 	ctx := context.Background()
-	repo := postgres.NewUserRepository(testPool)
+	repo := userpg.NewUserRepository(testPool)
 
 	_, err := repo.FindByID(ctx, "00000000-0000-0000-0000-000000000000")
 	if !errors.Is(err, user.ErrNotFound) {
@@ -88,7 +88,7 @@ func TestUserRepository_FindByEmail(t *testing.T) {
 	truncateUsers(t)
 
 	ctx := context.Background()
-	repo := postgres.NewUserRepository(testPool)
+	repo := userpg.NewUserRepository(testPool)
 
 	created := newTestUser(t, "humberto@shop.com")
 	if err := repo.Save(ctx, created); err != nil {
@@ -108,7 +108,7 @@ func TestUserRepository_FindByEmail_NotFound(t *testing.T) {
 	truncateUsers(t)
 
 	ctx := context.Background()
-	repo := postgres.NewUserRepository(testPool)
+	repo := userpg.NewUserRepository(testPool)
 
 	_, err := repo.FindByEmail(ctx, "nobody@shop.com")
 	if !errors.Is(err, user.ErrNotFound) {
@@ -120,7 +120,7 @@ func TestUserRepository_DuplicateEmail(t *testing.T) {
 	truncateUsers(t)
 
 	ctx := context.Background()
-	repo := postgres.NewUserRepository(testPool)
+	repo := userpg.NewUserRepository(testPool)
 
 	first := newTestUser(t, "humberto@shop.com")
 	if err := repo.Save(ctx, first); err != nil {
@@ -139,7 +139,7 @@ func TestUserRepository_DuplicateEmailIgnoreCase(t *testing.T) {
 	truncateUsers(t)
 
 	ctx := context.Background()
-	repo := postgres.NewUserRepository(testPool)
+	repo := userpg.NewUserRepository(testPool)
 
 	first := newTestUser(t, "humberto@shop.com")
 	if err := repo.Save(ctx, first); err != nil {
@@ -158,7 +158,7 @@ func TestUserRepository_Update(t *testing.T) {
 	truncateUsers(t)
 
 	ctx := context.Background()
-	repo := postgres.NewUserRepository(testPool)
+	repo := userpg.NewUserRepository(testPool)
 
 	created := newTestUser(t, "humberto@shop.com")
 	if err := repo.Save(ctx, created); err != nil {
@@ -201,7 +201,7 @@ func TestUserRepository_UpdateAllFields(t *testing.T) {
 	truncateUsers(t)
 
 	ctx := context.Background()
-	repo := postgres.NewUserRepository(testPool)
+	repo := userpg.NewUserRepository(testPool)
 
 	created := newTestUser(t, "humberto@shop.com")
 	if err := repo.Save(ctx, created); err != nil {
@@ -245,7 +245,7 @@ func TestUserRepository_UpdateDuplicateEmail(t *testing.T) {
 	truncateUsers(t)
 
 	ctx := context.Background()
-	repo := postgres.NewUserRepository(testPool)
+	repo := userpg.NewUserRepository(testPool)
 
 	taken := newTestUser(t, "taken@shop.com")
 	if err := repo.Save(ctx, taken); err != nil {
@@ -271,7 +271,7 @@ func TestUserRepository_UpdateVersionConflict(t *testing.T) {
 	truncateUsers(t)
 
 	ctx := context.Background()
-	repo := postgres.NewUserRepository(testPool)
+	repo := userpg.NewUserRepository(testPool)
 
 	created := newTestUser(t, "humberto@shop.com")
 	if err := repo.Save(ctx, created); err != nil {
@@ -302,7 +302,7 @@ func TestUserRepository_UpdateVersionConflict(t *testing.T) {
 func TestUserRepository_UpdateNotFound(t *testing.T) {
 	truncateUsers(t)
 	ctx := context.Background()
-	repo := postgres.NewUserRepository(testPool)
+	repo := userpg.NewUserRepository(testPool)
 
 	orphan := newTestUser(t, "orphan@shop.com")
 
@@ -315,7 +315,7 @@ func TestUserRepository_UpdateNotFound(t *testing.T) {
 func TestUserRepository_ExistsByEmail(t *testing.T) {
 	truncateUsers(t)
 	ctx := context.Background()
-	repo := postgres.NewUserRepository(testPool)
+	repo := userpg.NewUserRepository(testPool)
 
 	if err := repo.Save(ctx, newTestUser(t, "humberto@shop.com")); err != nil {
 		t.Fatalf("expected no error saving user: %v", err)
@@ -346,7 +346,7 @@ func TestUserRepository_ExistsByEmail(t *testing.T) {
 
 // saveUsersCreatedAt stores n users created one minute apart (index 0 is the
 // oldest) and returns their ids in creation order.
-func saveUsersCreatedAt(t *testing.T, repo *postgres.UserRepository, n int) []string {
+func saveUsersCreatedAt(t *testing.T, repo *userpg.UserRepository, n int) []string {
 	t.Helper()
 
 	base := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
@@ -376,7 +376,7 @@ func TestUserRepository_List(t *testing.T) {
 	truncateUsers(t)
 
 	ctx := context.Background()
-	repo := postgres.NewUserRepository(testPool)
+	repo := userpg.NewUserRepository(testPool)
 	ids := saveUsersCreatedAt(t, repo, 5)
 
 	tests := []struct {
@@ -418,7 +418,7 @@ func TestUserRepository_List_RestoresAllFields(t *testing.T) {
 	truncateUsers(t)
 
 	ctx := context.Background()
-	repo := postgres.NewUserRepository(testPool)
+	repo := userpg.NewUserRepository(testPool)
 
 	created := newTestUser(t, "humberto@shop.com")
 	if err := repo.Save(ctx, created); err != nil {
@@ -446,7 +446,7 @@ func TestUserRepository_List_RestoresAllFields(t *testing.T) {
 func TestUserRepository_List_Empty(t *testing.T) {
 	truncateUsers(t)
 
-	got, total, err := postgres.NewUserRepository(testPool).List(context.Background(), 20, 0)
+	got, total, err := userpg.NewUserRepository(testPool).List(context.Background(), 20, 0)
 	if err != nil {
 		t.Fatalf("failed to list users: %v", err)
 	}

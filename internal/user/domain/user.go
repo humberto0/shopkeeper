@@ -8,7 +8,7 @@ import (
 
 	"uuid"
 
-	"github.com/humberto0/shopkeeper/internal/domain/shared"
+	"github.com/humberto0/shopkeeper/internal/platform/id"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -51,8 +51,8 @@ type User struct {
 	updatedAt    time.Time
 }
 
-func ValidateUserID(id string) error {
-	if err := shared.ValidateID(id); err != nil {
+func ValidateUserID(userID string) error {
+	if err := id.ValidateID(userID); err != nil {
 		return ErrInvalidID
 	}
 	return nil
