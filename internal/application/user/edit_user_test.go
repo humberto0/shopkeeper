@@ -48,8 +48,54 @@ func TestEditUser_Success(t *testing.T) {
 	if edited.Role != in.Role {
 		t.Errorf("expected role %s, got %s", in.Role, edited.Role)
 	}
-	if edited.Version != originalVersion {
+	if edited.Version != originalVersion+1 {
 		t.Errorf("expected version %d, got %d", originalVersion+1, edited.Version)
+	}
+}
+
+func TestEditUser_ConsecutiveEditsUseReturnedVersion(t *testing.T) {
+	ctx := context.Background()
+	repo := memory.NewUserRepository()
+	ed := NewEditUser(repo)
+
+	created, err := domainuser.New("humberto", "humberto@shop.com", "test1234", domainuser.RoleOwner)
+	if err != nil {
+		t.Fatalf("creating user: %v", err)
+	}
+	if err := repo.Save(ctx, created); err != nil {
+		t.Fatalf("saving user: %v", err)
+	}
+
+	originalVersion := created.Version()
+	first, err := ed.Execute(ctx, validEditUserInput(created.ID(), created.Email(), originalVersion))
+	if err != nil {
+		t.Fatalf("first edit: %v", err)
+	}
+
+	second := validEditUserInput(created.ID(), "humbertinho@shop.com", first.Version)
+	edited, err := ed.Execute(ctx, second)
+	if err != nil {
+		t.Fatalf("second edit with version %d: %v", first.Version, err)
+	}
+	if edited.Version != originalVersion+2 {
+		t.Errorf("expected version %d, got %d", originalVersion+2, edited.Version)
+	}
+
+	stale, err := ed.Execute(ctx, validEditUserInput(created.ID(), second.Email, originalVersion))
+	if !errors.Is(err, domainuser.ErrConflict) {
+		t.Errorf("expected error %v reusing version %d, got %v", domainuser.ErrConflict, originalVersion, err)
+	}
+	assertNilOutput(t, stale)
+
+	stored, err := repo.FindByEmail(ctx, second.Email)
+	if err != nil {
+		t.Fatalf("finding user by new email: %v", err)
+	}
+	if stored.Version() != originalVersion+2 {
+		t.Errorf("expected stored version %d, got %d", originalVersion+2, stored.Version())
+	}
+	if exists, _ := repo.ExistsByEmail(ctx, created.Email()); exists {
+		t.Errorf("expected old email %s to be released", created.Email())
 	}
 }
 
