@@ -18,8 +18,14 @@ tmp/
 test/
 
 README.md
-docs/
 *.md
+
+# docs/ itself must stay: docs/docs.go is the swag-generated package imported
+# by internal/platform/http/router.go. Only the non-build files are excluded —
+# specs, and the swagger.json/yaml copies (docs.go carries its own template).
+docs/specs/
+docs/swagger.json
+docs/swagger.yaml
 
 Dockerfile
 .dockerignore
