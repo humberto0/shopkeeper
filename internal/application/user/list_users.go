@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/humberto0/shopkeeper/internal/domain/user"
-	"github.com/humberto0/shopkeeper/internal/pagination"
+	"github.com/humberto0/shopkeeper/internal/platform/pagination"
 )
 
 type listUsersRepository interface {

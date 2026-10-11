@@ -5,7 +5,7 @@ import (
 
 	_ "github.com/humberto0/shopkeeper/docs"
 	"github.com/humberto0/shopkeeper/internal/infrastructure/http/handler"
-	"github.com/humberto0/shopkeeper/internal/infrastructure/http/middleware"
+	platformhttp "github.com/humberto0/shopkeeper/internal/platform/http"
 	httpSwagger "github.com/swaggo/http-swagger/v2"
 )
 
@@ -20,10 +20,10 @@ func NewRouter(userHandler *handler.UserHandler, healthHandler http.HandlerFunc,
 
 	mux.Handle("GET /swagger/", httpSwagger.WrapHandler)
 
-	return middleware.RequestID(
-		middleware.Logger(
-			middleware.Recover(
-				middleware.CORS(corsAllowedOrigins)(mux),
+	return platformhttp.RequestID(
+		platformhttp.Logger(
+			platformhttp.Recover(
+				platformhttp.CORS(corsAllowedOrigins)(mux),
 			),
 		),
 	)

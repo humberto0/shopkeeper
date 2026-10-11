@@ -10,10 +10,11 @@ import (
 	"syscall"
 
 	userapp "github.com/humberto0/shopkeeper/internal/application/user"
-	"github.com/humberto0/shopkeeper/internal/infrastructure/config"
 	httprouter "github.com/humberto0/shopkeeper/internal/infrastructure/http"
 	"github.com/humberto0/shopkeeper/internal/infrastructure/http/handler"
-	"github.com/humberto0/shopkeeper/internal/infrastructure/postgres"
+	infrapg "github.com/humberto0/shopkeeper/internal/infrastructure/postgres"
+	"github.com/humberto0/shopkeeper/internal/platform/config"
+	"github.com/humberto0/shopkeeper/internal/platform/postgres"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -57,7 +58,7 @@ func run() error {
 		"name", cfg.Database.Name,
 	)
 
-	userRepo := postgres.NewUserRepository(pool)
+	userRepo := infrapg.NewUserRepository(pool)
 	registerUser := userapp.NewRegisterUser(userRepo)
 	findUserByID := userapp.NewFindUserByID(userRepo)
 	editUser := userapp.NewEditUser(userRepo)
