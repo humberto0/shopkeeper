@@ -224,6 +224,11 @@ Mirror the sales structure, referencing `suppliers` and feeding inbound stock mo
 
 List endpoints are paginated. `GET /users` uses offset pagination (`page` starts at 1, `limit` defaults to 20 and is capped at 100) and returns `{ "items": [...], "page", "limit", "totalItems", "totalPages" }`.
 
+Health probes:
+
+- `GET /health/live` — liveness: the process is up; checks no dependencies. Point restart-on-failure probes here.
+- `GET /health/ready` — readiness: pings the database (2 s timeout); answers 503 with `code: health.database_unavailable` while it is unreachable. Point traffic-routing probes here.
+
 Planned surface (v1):
 
 ```
@@ -284,7 +289,7 @@ The raw OpenAPI spec is also available at `http://localhost:8080/swagger/doc.jso
 
 ### Regenerating the docs
 
-The Swagger spec lives in `docs/` and is generated from the `@...` comments above handler functions (see `cmd/api/main.go` and `internal/user/http/handler.go`). Whenever you add or change a route, update its annotations and regenerate:
+The Swagger spec lives in `docs/` and is generated from the `@...` comments above handler functions (see `cmd/api/main.go`, `internal/platform/http/health.go` and `internal/user/http/handler.go`). Whenever you add or change a route, update its annotations and regenerate:
 
 ```bash
 make swag

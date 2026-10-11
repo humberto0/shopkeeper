@@ -22,30 +22,47 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/health": {
+        "/health/live": {
             "get": {
-                "description": "Pings the database pool to check that the API and its dependencies are up.",
+                "description": "Reports that the process is up. It checks no dependencies, so a database outage never makes an orchestrator restart the API.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "health"
                 ],
-                "summary": "Health check",
+                "summary": "Liveness probe",
                 "responses": {
                     "200": {
-                        "description": "status: ok",
+                        "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/platformhttp.HealthResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/health/ready": {
+            "get": {
+                "description": "Pings the database pool (2 s timeout). Answers 503 while the database is unreachable, so traffic stops being routed to this instance.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "health"
+                ],
+                "summary": "Readiness probe",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/platformhttp.HealthResponse"
                         }
                     },
                     "503": {
-                        "description": "database unavailable",
+                        "description": "code: health.database_unavailable",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/platformhttp.ErrorResponse"
                         }
                     }
                 }
@@ -260,6 +277,15 @@ const docTemplate = `{
                 "requestId": {
                     "type": "string",
                     "example": "0199d4a1-7c3e-7c3e-8b3e-7c3e7c3e7c3e"
+                }
+            }
+        },
+        "platformhttp.HealthResponse": {
+            "type": "object",
+            "properties": {
+                "status": {
+                    "type": "string",
+                    "example": "ok"
                 }
             }
         },

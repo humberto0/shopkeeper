@@ -31,9 +31,7 @@ func TestMain(m *testing.M) {
 		userapp.NewEditUser(userRepo),
 		userapp.NewListUsers(userRepo),
 	).Register(mux)
-	router = platformhttp.NewRouter(mux, func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	}, []string{"*"})
+	router = platformhttp.NewRouter(mux, platformhttp.NewHealthHandler(testPool), []string{"*"})
 
 	code := m.Run()
 	testPool.Close()

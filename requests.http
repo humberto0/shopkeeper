@@ -3,8 +3,11 @@
 # After registering a user below, copy its "id" from the response into this variable.
 @id = 01a07a7f-fc8b-731e-882e-ffa52b84cc8a
 
-### Health check — pings the database pool
-GET {{baseUrl}}/health
+### Liveness — process is up (no dependency checks)
+GET {{baseUrl}}/health/live
+
+### Readiness — pings the database pool (503 when unreachable)
+GET {{baseUrl}}/health/ready
 
 ### Register a new user (owner)
 POST {{baseUrl}}/users
