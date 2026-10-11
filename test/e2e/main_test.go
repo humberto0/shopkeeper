@@ -26,6 +26,7 @@ func TestMain(m *testing.M) {
 		userapp.NewRegisterUser(userRepo),
 		userapp.NewFindUserByID(userRepo),
 		userapp.NewEditUser(userRepo),
+		userapp.NewListUsers(userRepo),
 	)
 	router = httprouter.NewRouter(userHandler, func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -47,6 +48,14 @@ type editUserResponse struct {
 	Email   string `json:"email"`
 	Role    string `json:"role"`
 	Version int    `json:"version"`
+}
+
+type listUsersResponse struct {
+	Items      []findUserResponse `json:"items"`
+	Page       int                `json:"page"`
+	Limit      int                `json:"limit"`
+	TotalItems int                `json:"totalItems"`
+	TotalPages int                `json:"totalPages"`
 }
 
 var UUID string = "3d0ca315-aff9-4fc2-be61-3b76b9a2d798"
@@ -440,5 +449,122 @@ func TestE2E_EditUser_MalformedJSON(t *testing.T) {
 
 	if rec.Code != http.StatusBadRequest {
 		t.Fatalf("expected status %d, got %d (body=%s)", http.StatusBadRequest, rec.Code, rec.Body.String())
+	}
+}
+
+// GET /users
+
+// registerUsers creates n users through the API, one after another, and
+// returns their ids in creation order.
+func registerUsers(t *testing.T, n int) []string {
+	t.Helper()
+
+	ids := make([]string, 0, n)
+	for i := range n {
+		rec := doRequest(t, http.MethodPost, "/users", registerUserRequest{
+			Name:     fmt.Sprintf("User %d", i),
+			Email:    fmt.Sprintf("user%d@shop.com", i),
+			Password: "test1234",
+			Role:     "clerk",
+		})
+		if rec.Code != http.StatusCreated {
+			t.Fatalf("register user %d: expected %d, got %d (body=%s)", i, http.StatusCreated, rec.Code, rec.Body.String())
+		}
+		ids = append(ids, decode[registerUserResponse](t, rec).ID)
+	}
+	return ids
+}
+
+func TestE2E_ListUsers_Paginates(t *testing.T) {
+	truncateUsers(t)
+	ids := registerUsers(t, 3)
+
+	rec := doRequest(t, http.MethodGet, "/users?page=1&limit=2", nil)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d (body=%s)", http.StatusOK, rec.Code, rec.Body.String())
+	}
+	if ct := rec.Header().Get("Content-Type"); ct != "application/json" {
+		t.Errorf("expected Content-Type application/json, got %q", ct)
+	}
+
+	got := decode[listUsersResponse](t, rec)
+	if got.Page != 1 || got.Limit != 2 || got.TotalItems != 3 || got.TotalPages != 2 {
+		t.Errorf("unexpected page metadata: %+v", got)
+	}
+	if len(got.Items) != 2 {
+		t.Fatalf("expected 2 items, got %d", len(got.Items))
+	}
+	if got.Items[0].ID != ids[2] || got.Items[1].ID != ids[1] {
+		t.Errorf("expected newest users first (%s, %s), got (%s, %s)", ids[2], ids[1], got.Items[0].ID, got.Items[1].ID)
+	}
+	first := got.Items[0]
+	if first.Email != "user2@shop.com" || first.Role != "clerk" || !first.IsActive || first.Version != 1 ||
+		first.CreatedAt == "" || first.UpdatedAt == "" {
+		t.Errorf("unexpected item fields: %+v", first)
+	}
+
+	rec = doRequest(t, http.MethodGet, "/users?page=2&limit=2", nil)
+	got = decode[listUsersResponse](t, rec)
+	if len(got.Items) != 1 || got.Items[0].ID != ids[0] {
+		t.Errorf("expected only the oldest user %s on page 2, got %+v", ids[0], got.Items)
+	}
+}
+
+func TestE2E_ListUsers_NeverExposesPasswordHash(t *testing.T) {
+	truncateUsers(t)
+	registerUsers(t, 1)
+
+	rec := doRequest(t, http.MethodGet, "/users", nil)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d", http.StatusOK, rec.Code)
+	}
+	if body := rec.Body.String(); strings.Contains(body, "password") || strings.Contains(body, "$2a$") {
+		t.Errorf("response leaks password data: %s", body)
+	}
+}
+
+func TestE2E_ListUsers_EmptyReturnsEmptyArray(t *testing.T) {
+	truncateUsers(t)
+
+	rec := doRequest(t, http.MethodGet, "/users", nil)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d (body=%s)", http.StatusOK, rec.Code, rec.Body.String())
+	}
+	if !strings.Contains(rec.Body.String(), `"items":[]`) {
+		t.Errorf("expected items to be an empty array, got %s", rec.Body.String())
+	}
+
+	got := decode[listUsersResponse](t, rec)
+	if got.Page != 1 || got.Limit != 20 || got.TotalItems != 0 || got.TotalPages != 0 {
+		t.Errorf("unexpected page metadata: %+v", got)
+	}
+}
+
+func TestE2E_ListUsers_NormalizesQueryParams(t *testing.T) {
+	truncateUsers(t)
+
+	tests := []struct {
+		name      string
+		query     string
+		wantPage  int
+		wantLimit int
+	}{
+		{"defaults", "", 1, 20},
+		{"non-numeric values", "?page=abc&limit=xyz", 1, 20},
+		{"negative values", "?page=-2&limit=-10", 1, 20},
+		{"limit above max", "?limit=500", 1, 100},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rec := doRequest(t, http.MethodGet, "/users"+tt.query, nil)
+			if rec.Code != http.StatusOK {
+				t.Fatalf("expected status %d, got %d (body=%s)", http.StatusOK, rec.Code, rec.Body.String())
+			}
+			got := decode[listUsersResponse](t, rec)
+			if got.Page != tt.wantPage || got.Limit != tt.wantLimit {
+				t.Errorf("got page %d limit %d, want page %d limit %d", got.Page, got.Limit, tt.wantPage, tt.wantLimit)
+			}
+		})
 	}
 }

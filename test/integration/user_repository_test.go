@@ -3,7 +3,11 @@ package integration
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
+	"time"
+
+	"uuid"
 
 	"github.com/humberto0/shopkeeper/internal/domain/user"
 	"github.com/humberto0/shopkeeper/internal/infrastructure/postgres"
@@ -337,5 +341,116 @@ func TestUserRepository_ExistsByEmail(t *testing.T) {
 				t.Errorf("expected %v, got %v", tt.want, got)
 			}
 		})
+	}
+}
+
+// saveUsersCreatedAt stores n users created one minute apart (index 0 is the
+// oldest) and returns their ids in creation order.
+func saveUsersCreatedAt(t *testing.T, repo *postgres.UserRepository, n int) []string {
+	t.Helper()
+
+	base := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	ids := make([]string, 0, n)
+	for i := range n {
+		createdAt := base.Add(time.Duration(i) * time.Minute)
+		u := user.Restore(
+			uuid.NewV7().String(),
+			fmt.Sprintf("User %d", i),
+			fmt.Sprintf("user%d@shop.com", i),
+			"hash",
+			user.RoleClerk,
+			true,
+			1,
+			createdAt,
+			createdAt,
+		)
+		if err := repo.Save(context.Background(), u); err != nil {
+			t.Fatalf("failed to save user %d: %v", i, err)
+		}
+		ids = append(ids, u.ID())
+	}
+	return ids
+}
+
+func TestUserRepository_List(t *testing.T) {
+	truncateUsers(t)
+
+	ctx := context.Background()
+	repo := postgres.NewUserRepository(testPool)
+	ids := saveUsersCreatedAt(t, repo, 5)
+
+	tests := []struct {
+		name          string
+		limit, offset int
+		wantIDs       []string
+	}{
+		{"first page newest first", 2, 0, []string{ids[4], ids[3]}},
+		{"second page", 2, 2, []string{ids[2], ids[1]}},
+		{"partial last page", 2, 4, []string{ids[0]}},
+		{"offset past the end", 2, 10, []string{}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, total, err := repo.List(ctx, tt.limit, tt.offset)
+			if err != nil {
+				t.Fatalf("failed to list users: %v", err)
+			}
+			if total != 5 {
+				t.Errorf("expected total 5, got %d", total)
+			}
+			if got == nil {
+				t.Fatal("expected a non-nil slice")
+			}
+			if len(got) != len(tt.wantIDs) {
+				t.Fatalf("expected %d users, got %d", len(tt.wantIDs), len(got))
+			}
+			for i, u := range got {
+				if u.ID() != tt.wantIDs[i] {
+					t.Errorf("position %d: expected id %s, got %s", i, tt.wantIDs[i], u.ID())
+				}
+			}
+		})
+	}
+}
+
+func TestUserRepository_List_RestoresAllFields(t *testing.T) {
+	truncateUsers(t)
+
+	ctx := context.Background()
+	repo := postgres.NewUserRepository(testPool)
+
+	created := newTestUser(t, "humberto@shop.com")
+	if err := repo.Save(ctx, created); err != nil {
+		t.Fatalf("failed to save user: %v", err)
+	}
+
+	got, total, err := repo.List(ctx, 10, 0)
+	if err != nil {
+		t.Fatalf("failed to list users: %v", err)
+	}
+	if total != 1 || len(got) != 1 {
+		t.Fatalf("expected exactly one user, got total %d len %d", total, len(got))
+	}
+
+	u := got[0]
+	if u.ID() != created.ID() || u.Name() != created.Name() || u.Email() != created.Email() ||
+		u.Role() != created.Role() || u.IsActive() != created.IsActive() || u.Version() != 1 {
+		t.Errorf("listed user does not match saved user: got %+v", u)
+	}
+	if !u.CreatedAt().Equal(created.CreatedAt().Truncate(time.Microsecond)) {
+		t.Errorf("expected createdAt %v, got %v", created.CreatedAt(), u.CreatedAt())
+	}
+}
+
+func TestUserRepository_List_Empty(t *testing.T) {
+	truncateUsers(t)
+
+	got, total, err := postgres.NewUserRepository(testPool).List(context.Background(), 20, 0)
+	if err != nil {
+		t.Fatalf("failed to list users: %v", err)
+	}
+	if total != 0 || len(got) != 0 {
+		t.Errorf("expected no users, got total %d len %d", total, len(got))
 	}
 }

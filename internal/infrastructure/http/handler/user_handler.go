@@ -7,6 +7,7 @@ import (
 	"io"
 	"mime"
 	"net/http"
+	"strconv"
 	"time"
 
 	userapp "github.com/humberto0/shopkeeper/internal/application/user"
@@ -25,17 +26,28 @@ type editUserUseCase interface {
 	Execute(ctx context.Context, in userapp.EditUserInput) (*userapp.EditUserOutput, error)
 }
 
+type listUsersUseCase interface {
+	Execute(ctx context.Context, in userapp.ListUsersInput) (*userapp.ListUsersOutput, error)
+}
+
 type UserHandler struct {
 	registerUser registerUserUseCase
 	findUser     findUserByIDUseCase
 	editUser     editUserUseCase
+	listUsers    listUsersUseCase
 }
 
-func NewUserHandler(registerUser registerUserUseCase, findUser findUserByIDUseCase, editUser editUserUseCase) *UserHandler {
+func NewUserHandler(
+	registerUser registerUserUseCase,
+	findUser findUserByIDUseCase,
+	editUser editUserUseCase,
+	listUsers listUsersUseCase,
+) *UserHandler {
 	return &UserHandler{
 		registerUser: registerUser,
 		findUser:     findUser,
 		editUser:     editUser,
+		listUsers:    listUsers,
 	}
 }
 
@@ -81,6 +93,15 @@ type findUserResponse struct {
 	Version   int       `json:"version" example:"1"`
 	CreatedAt time.Time `json:"createdAt" example:"2020-01-01T00:00:00Z"`
 	UpdatedAt time.Time `json:"updatedAt" example:"2020-01-01T00:00:00Z"`
+}
+
+// listUsersResponse is one page of users (offset pagination).
+type listUsersResponse struct {
+	Items      []findUserResponse `json:"items"`
+	Page       int                `json:"page" example:"1"`
+	Limit      int                `json:"limit" example:"20"`
+	TotalItems int                `json:"totalItems" example:"57"`
+	TotalPages int                `json:"totalPages" example:"3"`
 }
 
 // Register godoc
@@ -150,6 +171,52 @@ func (h *UserHandler) Find(w http.ResponseWriter, r *http.Request) {
 		Version:   u.Version,
 		CreatedAt: u.CreatedAt,
 		UpdatedAt: u.UpdatedAt,
+	})
+}
+
+// List godoc
+//
+//	@Summary		List users
+//	@Description	Lists users newest first, paginated by page number. Out-of-range values are normalized: page < 1 becomes 1, limit defaults to 20 and is capped at 100. A page past the last one returns an empty items array.
+//	@Tags			users
+//	@Produce		json
+//	@Param			page	query		int	false	"Page number, starting at 1"	default(1)	minimum(1)
+//	@Param			limit	query		int	false	"Items per page"				default(20)	minimum(1)	maximum(100)
+//	@Success		200		{object}	listUsersResponse
+//	@Router			/users [get]
+func (h *UserHandler) List(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query()
+	// Missing or non-numeric values parse to 0, which the use case
+	// normalizes to the defaults.
+	page, _ := strconv.Atoi(q.Get("page"))
+	limit, _ := strconv.Atoi(q.Get("limit"))
+
+	out, err := h.listUsers.Execute(r.Context(), userapp.ListUsersInput{Page: page, Limit: limit})
+	if err != nil {
+		writeDomainError(w, r, err)
+		return
+	}
+
+	items := make([]findUserResponse, 0, len(out.Items))
+	for _, u := range out.Items {
+		items = append(items, findUserResponse{
+			ID:        u.ID,
+			Name:      u.Name,
+			Email:     u.Email,
+			Role:      string(u.Role),
+			IsActive:  u.IsActive,
+			Version:   u.Version,
+			CreatedAt: u.CreatedAt,
+			UpdatedAt: u.UpdatedAt,
+		})
+	}
+
+	writeJSON(w, http.StatusOK, listUsersResponse{
+		Items:      items,
+		Page:       out.Page,
+		Limit:      out.Limit,
+		TotalItems: out.TotalItems,
+		TotalPages: out.TotalPages,
 	})
 }
 

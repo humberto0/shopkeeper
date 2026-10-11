@@ -61,7 +61,8 @@ func run() error {
 	registerUser := userapp.NewRegisterUser(userRepo)
 	findUserByID := userapp.NewFindUserByID(userRepo)
 	editUser := userapp.NewEditUser(userRepo)
-	userHandler := handler.NewUserHandler(registerUser, findUserByID, editUser)
+	listUsers := userapp.NewListUsers(userRepo)
+	userHandler := handler.NewUserHandler(registerUser, findUserByID, editUser, listUsers)
 
 	router := httprouter.NewRouter(userHandler, handleHealth(pool), cfg.CORS.AllowedOrigins)
 
