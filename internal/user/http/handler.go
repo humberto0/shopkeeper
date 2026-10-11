@@ -126,7 +126,7 @@ func (h *UserHandler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 	var req registerUserRequest
 
 	if err := platformhttp.DecodeJSON(w, r, &req); err != nil {
-		platformhttp.WriteError(w, http.StatusBadRequest, err.Error())
+		platformhttp.WriteError(w, r, http.StatusBadRequest, platformhttp.CodeInvalidBody, err.Error())
 		return
 	}
 
@@ -237,15 +237,15 @@ func (h *UserHandler) List(w http.ResponseWriter, r *http.Request) {
 //	@Success		200		{object}	editUserResponse
 //	@Failure		400		{object}	platformhttp.ErrorResponse	"malformed request body or invalid id"
 //	@Failure		404		{object}	platformhttp.ErrorResponse	"user not found"
-//	@Failure		409		{object}	platformhttp.ErrorResponse	"email already exists"
-//	@Failure		422		{object}	platformhttp.ErrorResponse	"invalid name, email, role, or stale version"
+//	@Failure		409		{object}	platformhttp.ErrorResponse	"email already exists or stale version"
+//	@Failure		422		{object}	platformhttp.ErrorResponse	"invalid name, email or role"
 //	@Router			/users/{id} [put]
 func (h *UserHandler) Update(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	var req editUserRequest
 
 	if err := platformhttp.DecodeJSON(w, r, &req); err != nil {
-		platformhttp.WriteError(w, http.StatusBadRequest, err.Error())
+		platformhttp.WriteError(w, r, http.StatusBadRequest, platformhttp.CodeInvalidBody, err.Error())
 		return
 	}
 

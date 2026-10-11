@@ -61,7 +61,29 @@ type listUsersResponse struct {
 var UUID string = "3d0ca315-aff9-4fc2-be61-3b76b9a2d798"
 
 type errorResponse struct {
-	Error string `json:"error"`
+	Error     string `json:"error"`
+	Code      string `json:"code"`
+	RequestID string `json:"requestId"`
+}
+
+// assertErrorEnvelope checks the error body contract: a message, the
+// expected machine-readable code, and a requestId matching X-Request-ID.
+func assertErrorEnvelope(t *testing.T, rec *httptest.ResponseRecorder, wantCode string) {
+	t.Helper()
+
+	got := decode[errorResponse](t, rec)
+	if got.Error == "" {
+		t.Error("expected a non-empty error message")
+	}
+	if got.Code != wantCode {
+		t.Errorf("expected code %q, got %q", wantCode, got.Code)
+	}
+	if got.RequestID == "" {
+		t.Error("expected a non-empty requestId")
+	}
+	if header := rec.Header().Get("X-Request-ID"); got.RequestID != header {
+		t.Errorf("expected requestId %q to match X-Request-ID header %q", got.RequestID, header)
+	}
 }
 
 func doRequest(t *testing.T, method, path string, body any) *httptest.ResponseRecorder {
@@ -148,10 +170,7 @@ func TestE2E_RegisterUser_DuplicateEmail(t *testing.T) {
 		t.Fatalf("expected status %d, got %d (body=%s)", http.StatusConflict, rec.Code, rec.Body.String())
 	}
 
-	got := decode[errorResponse](t, rec)
-	if got.Error == "" {
-		t.Error("expected a non-empty error message")
-	}
+	assertErrorEnvelope(t, rec, "user.email_already_exists")
 }
 
 func TestE2E_RegisterUser_InvalidPayload(t *testing.T) {
@@ -190,6 +209,7 @@ func TestE2E_RegisterUser_InvalidPayload(t *testing.T) {
 			if rec.Code != tt.want {
 				t.Fatalf("expected status %d, got %d (body=%s)", tt.want, rec.Code, rec.Body.String())
 			}
+			assertErrorEnvelope(t, rec, "user.invalid")
 		})
 	}
 }
@@ -206,6 +226,8 @@ func TestE2E_RegisterUser_MalformedJSON(t *testing.T) {
 	if rec.Code != http.StatusBadRequest {
 		t.Fatalf("expected status %d, got %d (body=%s)", http.StatusBadRequest, rec.Code, rec.Body.String())
 	}
+
+	assertErrorEnvelope(t, rec, "request.invalid_body")
 }
 
 // GET /users/{id}
@@ -254,10 +276,7 @@ func TestE2E_FindUser_MalformedID(t *testing.T) {
 		t.Fatalf("expected status %d, got %d (body=%s)", http.StatusBadRequest, rec.Code, rec.Body.String())
 	}
 
-	got := decode[errorResponse](t, rec)
-	if got.Error == "" {
-		t.Error("expected a non-empty error message")
-	}
+	assertErrorEnvelope(t, rec, "user.invalid_id")
 }
 
 func TestE2E_FindUser_NotFound(t *testing.T) {
@@ -268,10 +287,7 @@ func TestE2E_FindUser_NotFound(t *testing.T) {
 		t.Fatalf("expected status %d, got %d (body=%s)", http.StatusNotFound, rec.Code, rec.Body.String())
 	}
 
-	got := decode[errorResponse](t, rec)
-	if got.Error == "" {
-		t.Error("expected a non-empty error message")
-	}
+	assertErrorEnvelope(t, rec, "user.not_found")
 }
 
 func TestE2E_EditUser_Success(t *testing.T) {
@@ -317,10 +333,7 @@ func TestE2E_EditUser_NotFound(t *testing.T) {
 	if edit.Code != http.StatusNotFound {
 		t.Fatalf("expected status %d, got %d (body=%s)", http.StatusNotFound, edit.Code, edit.Body.String())
 	}
-	got := decode[errorResponse](t, edit)
-	if got.Error == "" {
-		t.Error("expected a non-empty error message")
-	}
+	assertErrorEnvelope(t, edit, "user.not_found")
 }
 
 func TestE2E_EditUser_UUIDInvalid(t *testing.T) {
@@ -329,10 +342,7 @@ func TestE2E_EditUser_UUIDInvalid(t *testing.T) {
 	if edit.Code != http.StatusBadRequest {
 		t.Fatalf("expected status %d, got %d (body=%s)", http.StatusBadRequest, edit.Code, edit.Body.String())
 	}
-	got := decode[errorResponse](t, edit)
-	if got.Error == "" {
-		t.Error("expected a non-empty error message")
-	}
+	assertErrorEnvelope(t, edit, "user.invalid_id")
 }
 
 func TestE2E_EditUser_StaleVersionConflict(t *testing.T) {
@@ -350,14 +360,11 @@ func TestE2E_EditUser_StaleVersionConflict(t *testing.T) {
 		Role:    "owner",
 		Version: 2,
 	})
-	if rec.Code != http.StatusUnprocessableEntity {
-		t.Fatalf("expected status %d, got %d (body=%s)", http.StatusUnprocessableEntity, rec.Code, rec.Body.String())
+	if rec.Code != http.StatusConflict {
+		t.Fatalf("expected status %d, got %d (body=%s)", http.StatusConflict, rec.Code, rec.Body.String())
 	}
 
-	got := decode[errorResponse](t, rec)
-	if got.Error == "" {
-		t.Error("expected a non-empty error message")
-	}
+	assertErrorEnvelope(t, rec, "user.version_conflict")
 }
 
 func TestE2E_EditUser_InvalidPayload(t *testing.T) {
@@ -397,6 +404,7 @@ func TestE2E_EditUser_InvalidPayload(t *testing.T) {
 			if rec.Code != tt.want {
 				t.Fatalf("expected status %d, got %d (body=%s)", tt.want, rec.Code, rec.Body.String())
 			}
+			assertErrorEnvelope(t, rec, "user.invalid")
 		})
 	}
 }
@@ -426,10 +434,7 @@ func TestE2E_EditUser_DuplicateEmail(t *testing.T) {
 		t.Fatalf("expected status %d, got %d (body=%s)", http.StatusConflict, rec.Code, rec.Body.String())
 	}
 
-	got := decode[errorResponse](t, rec)
-	if got.Error == "" {
-		t.Error("expected a non-empty error message")
-	}
+	assertErrorEnvelope(t, rec, "user.email_already_exists")
 }
 
 func TestE2E_EditUser_MalformedJSON(t *testing.T) {
@@ -450,6 +455,8 @@ func TestE2E_EditUser_MalformedJSON(t *testing.T) {
 	if rec.Code != http.StatusBadRequest {
 		t.Fatalf("expected status %d, got %d (body=%s)", http.StatusBadRequest, rec.Code, rec.Body.String())
 	}
+
+	assertErrorEnvelope(t, rec, "request.invalid_body")
 }
 
 // GET /users

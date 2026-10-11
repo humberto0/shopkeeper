@@ -2,7 +2,14 @@ basePath: /
 definitions:
   platformhttp.ErrorResponse:
     properties:
+      code:
+        example: user.not_found
+        type: string
       error:
+        example: 'user: not found'
+        type: string
+      requestId:
+        example: 0199d4a1-7c3e-7c3e-8b3e-7c3e7c3e7c3e
         type: string
     type: object
   userhttp.editUserRequest:
@@ -270,11 +277,11 @@ paths:
           schema:
             $ref: '#/definitions/platformhttp.ErrorResponse'
         "409":
-          description: email already exists
+          description: email already exists or stale version
           schema:
             $ref: '#/definitions/platformhttp.ErrorResponse'
         "422":
-          description: invalid name, email, role, or stale version
+          description: invalid name, email or role
           schema:
             $ref: '#/definitions/platformhttp.ErrorResponse'
       summary: Edit an existing user
