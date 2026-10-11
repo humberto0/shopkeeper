@@ -2,9 +2,9 @@
 
 | | |
 |---|---|
-| **Status** | ⏳ Backlog |
+| **Status** | 🚧 In progress |
 | **Created** | 2026-10-11 |
-| **Started** | — |
+| **Started** | 2026-10-11 |
 | **Finished** | — |
 | **Depends on** | 001-feature-first-layout, 002-error-envelope-and-409-conflict |
 | **Parallel with** | 004, 005, 006 |
