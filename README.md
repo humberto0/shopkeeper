@@ -313,8 +313,9 @@ This runs `swag` as a Go tool dependency (declared in `go.mod`), so no separate 
 
 ### Prerequisites
 
-- Go 1.22 or newer
+- Go 1.27.2 or newer (as required by `go.mod`)
 - PostgreSQL 15 or newer
+- [golangci-lint](https://golangci-lint.run/) v2 (CI uses v2.14.0) — required by `make fmt`, `make lint` and `make check`
 
 ### Setup
 
