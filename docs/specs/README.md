@@ -1,13 +1,13 @@
 # Specs board
 
-**Progress:** 0/6 done · 0 in progress · 6 in backlog
+**Progress:** 0/6 done · 1 in progress · 5 in backlog
 **Last updated:** 2026-10-11
 
 Source of the backlog: the "known pending items in shopkeeper" list from the `backend-go` skill.
 
 | # | Spec | Status | Skills | Depends on | Parallel with | Started | Finished |
 |---|---|---|---|---|---|---|---|
-| 001 | [Feature-first layout](backlog/001-feature-first-layout.md) | ⏳ Backlog | backend-core, backend-go | — | — | — | — |
+| 001 | [Feature-first layout](in-progress/001-feature-first-layout.md) | 🚧 In progress | backend-core, backend-go | — | — | 2026-10-11 | — |
 | 002 | [Error envelope and 409 conflict](backlog/002-error-envelope-and-409-conflict.md) | ⏳ Backlog | backend-core, backend-go | 001 | 004, 005, 006 | — | — |
 | 003 | [Liveness and readiness health](backlog/003-liveness-readiness-health.md) | ⏳ Backlog | backend-core, backend-go | 001, 002 | 004, 005, 006 | — | — |
 | 004 | [Canonical DATABASE_URL config](backlog/004-canonical-database-url-config.md) | ⏳ Backlog | backend-core, backend-go, devops-core | 001 | 002, 003, 006 | — | — |

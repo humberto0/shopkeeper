@@ -2,9 +2,9 @@
 
 | | |
 |---|---|
-| **Status** | ⏳ Backlog |
+| **Status** | 🚧 In progress |
 | **Created** | 2026-10-11 |
-| **Started** | — |
+| **Started** | 2026-10-11 |
 | **Finished** | — |
 | **Depends on** | — (merge `feat/list-users-pagination` first, see Notes) |
 | **Parallel with** | — |
