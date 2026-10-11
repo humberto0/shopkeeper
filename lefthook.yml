@@ -6,12 +6,14 @@ pre-commit:
       glob: "*.go"
       stage_fixed: true
     lint:
-      run: golangci-lint run
+      run: make lint
 
 pre-push:
   parallel: true
   commands:
     test:
       run: make test
+    typecheck:
+      run: make typecheck
     govulncheck:
       run: make govulncheck

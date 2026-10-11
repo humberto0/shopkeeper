@@ -335,11 +335,34 @@ Configuration comes from environment variables; `.env` is loaded for local devel
 
 The API fails at startup with `config: DATABASE_URL or DB_PASSWORD is required` when neither is set. In `docker compose`, the `api` service gets its own `DATABASE_URL` pointing at the `postgres` service.
 
+### Development
+
+The Makefile is the single entry point: CI, the lefthook git hooks and local sessions run the same targets. The canonical "definition of done" targets are `lint`, `typecheck`, `test`, `test-integration` and `build`. `fmt`, `lint` and `check` need [`golangci-lint`](https://golangci-lint.run) v2 installed (CI pins v2.14.0).
+
+| Target | What it does | When to run it |
+|---|---|---|
+| `make fmt` | `gofmt -l -w .` + `golangci-lint fmt` (goimports with the module's local prefix) | Before committing; the pre-commit hook also runs `gofmt` on staged files |
+| `make fmt-check` | Fails if `gofmt -l` lists any file | Part of `make check` |
+| `make lint` | `golangci-lint run` (config in `golangci.yml`) | Pre-commit hook; CI `lint` job |
+| `make typecheck` | `go vet ./...` (the compiler already type-checks during `build`) | Pre-push hook; CI `lint` job |
+| `make build` | Static `bin/api` with the Dockerfile flags (`CGO_ENABLED=0 -trimpath -ldflags="-s -w"`) | Before opening a PR; CI `build` job |
+| `make check` | `fmt-check lint typecheck test` | Single local command before pushing |
+| `make swag` | Regenerates the Swagger docs in `docs/` | After changing handler annotations |
+| `make db-up` | Starts the dev Postgres (`docker compose`) | Local development |
+| `make migrate-create name=...` | Creates a new numbered migration pair | Adding a schema change |
+| `make migrate-up` / `make migrate-down` / `make migrate-version` | Applies, rolls back one, or shows the version of migrations on `DATABASE_URL` | Local development |
+| `make govulncheck` | Reports reachable known vulnerabilities | Pre-push hook; CI `govulncheck` job |
+
 ### Running tests
 
-```bash
-go test ./...
-```
+| Target | What it does | When to run it |
+|---|---|---|
+| `make test` | Unit tests: `go test ./... -short` | Pre-push hook; any change |
+| `make test-db-up` | Starts the test Postgres (port 5433) and applies migrations | Called by the targets below |
+| `make test-integration` | Integration tests against the real test Postgres | Changes to repositories or SQL |
+| `make test-e2e` | End-to-end HTTP tests against the real test Postgres | Changes to handlers or routing |
+| `make test-coverage` / `make test-coverage-html` | Full suite with a coverage report (text / browser) | Checking coverage locally |
+| `make test-coverage-check` | `test-coverage` that fails below `COVERAGE_THRESHOLD` (default 40%) | CI `test` job |
 
 ---
 
