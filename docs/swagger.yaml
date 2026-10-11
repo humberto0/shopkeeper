@@ -12,6 +12,12 @@ definitions:
         example: 0199d4a1-7c3e-7c3e-8b3e-7c3e7c3e7c3e
         type: string
     type: object
+  platformhttp.HealthResponse:
+    properties:
+      status:
+        example: ok
+        type: string
+    type: object
   userhttp.editUserRequest:
     properties:
       email:
@@ -137,22 +143,53 @@ info:
 paths:
   /health:
     get:
-      description: Pings the database pool to check that the API and its dependencies
-        are up.
+      deprecated: true
+      description: Same behavior as /health/ready. Use /health/ready for readiness
+        and /health/live for liveness.
       produces:
       - application/json
       responses:
         "200":
-          description: 'status: ok'
+          description: OK
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/platformhttp.HealthResponse'
         "503":
-          description: database unavailable
+          description: 'code: health.database_unavailable'
           schema:
-            type: string
-      summary: Health check
+            $ref: '#/definitions/platformhttp.ErrorResponse'
+      summary: Health check (alias of /health/ready)
+      tags:
+      - health
+  /health/live:
+    get:
+      description: Reports that the process is up. It checks no dependencies, so a
+        database outage never makes an orchestrator restart the API.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/platformhttp.HealthResponse'
+      summary: Liveness probe
+      tags:
+      - health
+  /health/ready:
+    get:
+      description: Pings the database pool (2 s timeout). Answers 503 while the database
+        is unreachable, so traffic stops being routed to this instance.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/platformhttp.HealthResponse'
+        "503":
+          description: 'code: health.database_unavailable'
+          schema:
+            $ref: '#/definitions/platformhttp.ErrorResponse'
+      summary: Readiness probe
       tags:
       - health
   /users:

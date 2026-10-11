@@ -9,8 +9,6 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/jackc/pgx/v5/pgxpool"
-
 	"github.com/humberto0/shopkeeper/internal/platform/config"
 	platformhttp "github.com/humberto0/shopkeeper/internal/platform/http"
 	"github.com/humberto0/shopkeeper/internal/platform/postgres"
@@ -68,7 +66,7 @@ func run() error {
 	listUsers := userapp.NewListUsers(userRepo)
 	userhttp.NewUserHandler(registerUser, findUserByID, editUser, listUsers).Register(mux)
 
-	router := platformhttp.NewRouter(mux, handleHealth(pool), cfg.CORS.AllowedOrigins)
+	router := platformhttp.NewRouter(mux, platformhttp.NewHealthHandler(pool), cfg.CORS.AllowedOrigins)
 
 	server := &http.Server{
 		Addr:         ":" + cfg.Serve.Port,
@@ -103,24 +101,4 @@ func run() error {
 
 	logger.Info("server stopped gracefully")
 	return nil
-}
-
-// handleHealth godoc
-//
-//	@Summary		Health check
-//	@Description	Pings the database pool to check that the API and its dependencies are up.
-//	@Tags			health
-//	@Produce		json
-//	@Success		200	{object}	map[string]string	"status: ok"
-//	@Failure		503	{string}	string				"database unavailable"
-//	@Router			/health [get]
-func handleHealth(pool *pgxpool.Pool) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if err := pool.Ping(r.Context()); err != nil {
-			http.Error(w, "database unavailable", http.StatusServiceUnavailable)
-			return
-		}
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(`{"status":"ok"}`))
-	}
 }
