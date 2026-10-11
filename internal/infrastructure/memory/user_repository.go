@@ -31,7 +31,7 @@ func (r *UserRepository) Save(ctx context.Context, u *user.User) error {
 		return user.ErrEmailAlreadyExists
 	}
 
-	r.byID[u.ID()] = u
+	r.byID[u.ID()] = clone(u)
 	r.byEmail[u.Email()] = u.ID()
 	return nil
 }
@@ -57,8 +57,8 @@ func (r *UserRepository) Update(ctx context.Context, u *user.User) error {
 		r.byEmail[u.Email()] = u.ID()
 	}
 
-	u.SetVersion(existing.Version())
-	r.byID[u.ID()] = u
+	u.SetVersion(existing.Version() + 1)
+	r.byID[u.ID()] = clone(u)
 	return nil
 }
 
@@ -70,7 +70,7 @@ func (r *UserRepository) FindByID(ctx context.Context, id string) (*user.User, e
 	if !ok {
 		return nil, user.ErrNotFound
 	}
-	return u, nil
+	return clone(u), nil
 }
 
 func (r *UserRepository) FindByEmail(ctx context.Context, email string) (*user.User, error) {
@@ -81,7 +81,7 @@ func (r *UserRepository) FindByEmail(ctx context.Context, email string) (*user.U
 	if !ok {
 		return nil, user.ErrNotFound
 	}
-	return r.byID[id], nil
+	return clone(r.byID[id]), nil
 }
 
 func (r *UserRepository) ExistsByEmail(ctx context.Context, email string) (bool, error) {
@@ -104,6 +104,16 @@ func (r *UserRepository) Count() int {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	return len(r.byID)
+}
+
+// clone copies a user so callers never share the stored pointer: changes
+// only reach the repository through Save or Update, as with Postgres.
+func clone(u *user.User) *user.User {
+	return user.Restore(
+		u.ID(), u.Name(), u.Email(), u.PasswordHash(),
+		u.Role(), u.IsActive(), u.Version(),
+		u.CreatedAt(), u.UpdatedAt(),
+	)
 }
 
 func normalizeEmail(email string) string {
