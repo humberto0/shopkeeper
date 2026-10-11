@@ -319,6 +319,22 @@ go run ./cmd/api
 
 The API starts on `http://localhost:8080` by default.
 
+### Configuration
+
+Configuration comes from environment variables; `.env` is loaded for local development and never overrides a variable that is already set.
+
+| Variable | Default | Notes |
+|---|---|---|
+| `DATABASE_URL` | — | **Canonical** database setting: the full DSN (`postgres://user:pass@host:5432/db?sslmode=disable`). The same value is used by `make migrate-*` and stored in the secret manager, so one secret configures everything. |
+| `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `DB_SSL_MODE` | `localhost`, `5432`, `shopkeeper`, —, `shopkeeper`, `disable` | **Local-dev fallback**, used only when `DATABASE_URL` is empty; `DB_PASSWORD` is then required. The startup log says which source was used (`dsn_source`). |
+| `DB_MAX_CONNECTIONS`, `DB_MIN_CONNECTIONS` | `10`, `2` | Pool size |
+| `DB_MAX_CONN_IDLE_TIME`, `DB_MAX_CONN_LIFETIME` | `5m`, `30m` | Go durations |
+| `SERVER_PORT` | `8080` | |
+| `SERVER_READ_TIMEOUT`, `SERVER_WRITE_TIMEOUT`, `SERVER_IDLE_TIMEOUT`, `SERVER_SHUTDOWN_TIMEOUT` | `10s`, `10s`, `60s`, `15s` | Go durations |
+| `CORS_ALLOWED_ORIGINS` | `*` | Comma-separated |
+
+The API fails at startup with `config: DATABASE_URL or DB_PASSWORD is required` when neither is set. In `docker compose`, the `api` service gets its own `DATABASE_URL` pointing at the `postgres` service.
+
 ### Running tests
 
 ```bash
