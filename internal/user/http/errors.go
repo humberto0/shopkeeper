@@ -28,13 +28,13 @@ func writeDomainError(w http.ResponseWriter, r *http.Request, err error) {
 		platformhttp.WriteError(w, r, http.StatusBadRequest, codeInvalidID, err.Error())
 	case errors.Is(err, user.ErrEmailAlreadyExists):
 		platformhttp.WriteError(w, r, http.StatusConflict, codeEmailAlreadyExists, err.Error())
+	case errors.Is(err, user.ErrConflict):
+		platformhttp.WriteError(w, r, http.StatusConflict, codeVersionConflict, err.Error())
 	case errors.Is(err, user.ErrInvalidName),
 		errors.Is(err, user.ErrInvalidEmail),
 		errors.Is(err, user.ErrWeakPassword),
 		errors.Is(err, user.ErrInvalidRole):
 		platformhttp.WriteError(w, r, http.StatusUnprocessableEntity, codeInvalid, err.Error())
-	case errors.Is(err, user.ErrConflict):
-		platformhttp.WriteError(w, r, http.StatusUnprocessableEntity, codeVersionConflict, err.Error())
 	case errors.Is(err, user.ErrNotFound):
 		platformhttp.WriteError(w, r, http.StatusNotFound, codeNotFound, err.Error())
 	case errors.Is(err, user.ErrInvalidCredentials):

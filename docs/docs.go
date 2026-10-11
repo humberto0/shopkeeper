@@ -230,13 +230,13 @@ const docTemplate = `{
                         }
                     },
                     "409": {
-                        "description": "email already exists",
+                        "description": "email already exists or stale version",
                         "schema": {
                             "$ref": "#/definitions/platformhttp.ErrorResponse"
                         }
                     },
                     "422": {
-                        "description": "invalid name, email, role, or stale version",
+                        "description": "invalid name, email or role",
                         "schema": {
                             "$ref": "#/definitions/platformhttp.ErrorResponse"
                         }

@@ -360,8 +360,8 @@ func TestE2E_EditUser_StaleVersionConflict(t *testing.T) {
 		Role:    "owner",
 		Version: 2,
 	})
-	if rec.Code != http.StatusUnprocessableEntity {
-		t.Fatalf("expected status %d, got %d (body=%s)", http.StatusUnprocessableEntity, rec.Code, rec.Body.String())
+	if rec.Code != http.StatusConflict {
+		t.Fatalf("expected status %d, got %d (body=%s)", http.StatusConflict, rec.Code, rec.Body.String())
 	}
 
 	assertErrorEnvelope(t, rec, "user.version_conflict")
