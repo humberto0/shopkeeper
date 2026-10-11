@@ -9,13 +9,14 @@ import (
 	"os/signal"
 	"syscall"
 
-	userapp "github.com/humberto0/shopkeeper/internal/application/user"
-	httprouter "github.com/humberto0/shopkeeper/internal/infrastructure/http"
-	"github.com/humberto0/shopkeeper/internal/infrastructure/http/handler"
-	infrapg "github.com/humberto0/shopkeeper/internal/infrastructure/postgres"
-	"github.com/humberto0/shopkeeper/internal/platform/config"
-	"github.com/humberto0/shopkeeper/internal/platform/postgres"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/humberto0/shopkeeper/internal/platform/config"
+	platformhttp "github.com/humberto0/shopkeeper/internal/platform/http"
+	"github.com/humberto0/shopkeeper/internal/platform/postgres"
+	userapp "github.com/humberto0/shopkeeper/internal/user/application"
+	userhttp "github.com/humberto0/shopkeeper/internal/user/http"
+	userpg "github.com/humberto0/shopkeeper/internal/user/postgres"
 )
 
 // @title						shopkeeper API
@@ -58,14 +59,16 @@ func run() error {
 		"name", cfg.Database.Name,
 	)
 
-	userRepo := infrapg.NewUserRepository(pool)
+	mux := http.NewServeMux()
+
+	userRepo := userpg.NewUserRepository(pool)
 	registerUser := userapp.NewRegisterUser(userRepo)
 	findUserByID := userapp.NewFindUserByID(userRepo)
 	editUser := userapp.NewEditUser(userRepo)
 	listUsers := userapp.NewListUsers(userRepo)
-	userHandler := handler.NewUserHandler(registerUser, findUserByID, editUser, listUsers)
+	userhttp.NewUserHandler(registerUser, findUserByID, editUser, listUsers).Register(mux)
 
-	router := httprouter.NewRouter(userHandler, handleHealth(pool), cfg.CORS.AllowedOrigins)
+	router := platformhttp.NewRouter(mux, handleHealth(pool), cfg.CORS.AllowedOrigins)
 
 	server := &http.Server{
 		Addr:         ":" + cfg.Serve.Port,

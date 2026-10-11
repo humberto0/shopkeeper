@@ -5,12 +5,13 @@ import (
 	"os"
 	"testing"
 
-	userapp "github.com/humberto0/shopkeeper/internal/application/user"
-	httprouter "github.com/humberto0/shopkeeper/internal/infrastructure/http"
-	"github.com/humberto0/shopkeeper/internal/infrastructure/http/handler"
-	"github.com/humberto0/shopkeeper/internal/infrastructure/postgres"
-	"github.com/humberto0/shopkeeper/test/testutil"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	platformhttp "github.com/humberto0/shopkeeper/internal/platform/http"
+	userapp "github.com/humberto0/shopkeeper/internal/user/application"
+	userhttp "github.com/humberto0/shopkeeper/internal/user/http"
+	userpg "github.com/humberto0/shopkeeper/internal/user/postgres"
+	"github.com/humberto0/shopkeeper/test/testutil"
 )
 
 var (
@@ -21,14 +22,16 @@ var (
 func TestMain(m *testing.M) {
 	testPool = testutil.ConnectOrSkip()
 
-	userRepo := postgres.NewUserRepository(testPool)
-	userHandler := handler.NewUserHandler(
+	mux := http.NewServeMux()
+
+	userRepo := userpg.NewUserRepository(testPool)
+	userhttp.NewUserHandler(
 		userapp.NewRegisterUser(userRepo),
 		userapp.NewFindUserByID(userRepo),
 		userapp.NewEditUser(userRepo),
 		userapp.NewListUsers(userRepo),
-	)
-	router = httprouter.NewRouter(userHandler, func(w http.ResponseWriter, r *http.Request) {
+	).Register(mux)
+	router = platformhttp.NewRouter(mux, func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}, []string{"*"})
 

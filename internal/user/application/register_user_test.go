@@ -1,17 +1,17 @@
-package user
+package userapp
 
 import (
 	"context"
 	"errors"
 	"testing"
 
-	domainuser "github.com/humberto0/shopkeeper/internal/domain/user"
-	"github.com/humberto0/shopkeeper/internal/infrastructure/memory"
+	user "github.com/humberto0/shopkeeper/internal/user/domain"
+	usermem "github.com/humberto0/shopkeeper/internal/user/memory"
 )
 
 type stubRepository struct {
 	existsByEmail func(ctx context.Context, email string) (bool, error)
-	save          func(ctx context.Context, u *domainuser.User) error
+	save          func(ctx context.Context, u *user.User) error
 }
 
 func (s stubRepository) ExistsByEmail(ctx context.Context, email string) (bool, error) {
@@ -21,7 +21,7 @@ func (s stubRepository) ExistsByEmail(ctx context.Context, email string) (bool, 
 	return s.existsByEmail(ctx, email)
 }
 
-func (s stubRepository) Save(ctx context.Context, u *domainuser.User) error {
+func (s stubRepository) Save(ctx context.Context, u *user.User) error {
 	if s.save == nil {
 		return nil
 	}
@@ -33,13 +33,13 @@ func validInput() RegisterUserInput {
 		Name:     "Humberto",
 		Email:    "humberto@shop.com",
 		Password: "test1234",
-		Role:     domainuser.RoleOwner,
+		Role:     user.RoleOwner,
 	}
 }
 
 func TestRegisterUser_Success(t *testing.T) {
 	ctx := context.Background()
-	repo := memory.NewUserRepository()
+	repo := usermem.NewUserRepository()
 	uc := NewRegisterUser(repo)
 
 	out, err := uc.Execute(ctx, validInput())
@@ -56,14 +56,14 @@ func TestRegisterUser_Success(t *testing.T) {
 	if out.Email != "humberto@shop.com" {
 		t.Errorf("expected email %q, got %q", "humberto@shop.com", out.Email)
 	}
-	if out.Role != domainuser.RoleOwner {
-		t.Errorf("expected role %q, got %q", domainuser.RoleOwner, out.Role)
+	if out.Role != user.RoleOwner {
+		t.Errorf("expected role %q, got %q", user.RoleOwner, out.Role)
 	}
 }
 
 func TestRegisterUser_PersistsTheUser(t *testing.T) {
 	ctx := context.Background()
-	repo := memory.NewUserRepository()
+	repo := usermem.NewUserRepository()
 	uc := NewRegisterUser(repo)
 
 	out, err := uc.Execute(ctx, validInput())
@@ -95,7 +95,7 @@ func TestRegisterUser_PersistsTheUser(t *testing.T) {
 
 func TestRegisterUser_EmailAlreadyExists(t *testing.T) {
 	ctx := context.Background()
-	repo := memory.NewUserRepository()
+	repo := usermem.NewUserRepository()
 	uc := NewRegisterUser(repo)
 
 	if _, err := uc.Execute(ctx, validInput()); err != nil {
@@ -103,8 +103,8 @@ func TestRegisterUser_EmailAlreadyExists(t *testing.T) {
 	}
 
 	_, err := uc.Execute(ctx, validInput())
-	if !errors.Is(err, domainuser.ErrEmailAlreadyExists) {
-		t.Errorf("expected err to be %v, got %v", domainuser.ErrEmailAlreadyExists, err)
+	if !errors.Is(err, user.ErrEmailAlreadyExists) {
+		t.Errorf("expected err to be %v, got %v", user.ErrEmailAlreadyExists, err)
 	}
 
 	if repo.Count() != 1 {
@@ -121,29 +121,29 @@ func TestRegisterUser_InvalidInput(t *testing.T) {
 		{
 			name:    "empty name",
 			mutate:  func(in *RegisterUserInput) { in.Name = "" },
-			wantErr: domainuser.ErrInvalidName,
+			wantErr: user.ErrInvalidName,
 		},
 		{
 			name:    "malformed email",
 			mutate:  func(in *RegisterUserInput) { in.Email = "humberto.shop.com" },
-			wantErr: domainuser.ErrInvalidEmail,
+			wantErr: user.ErrInvalidEmail,
 		},
 		{
 			name:    "password too short",
 			mutate:  func(in *RegisterUserInput) { in.Password = "234" },
-			wantErr: domainuser.ErrWeakPassword,
+			wantErr: user.ErrWeakPassword,
 		},
 		{
 			name:    "unknown role",
-			mutate:  func(in *RegisterUserInput) { in.Role = domainuser.Role("maneger") },
-			wantErr: domainuser.ErrInvalidRole,
+			mutate:  func(in *RegisterUserInput) { in.Role = user.Role("maneger") },
+			wantErr: user.ErrInvalidRole,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
-			repo := memory.NewUserRepository()
+			repo := usermem.NewUserRepository()
 			uc := NewRegisterUser(repo)
 
 			in := validInput()

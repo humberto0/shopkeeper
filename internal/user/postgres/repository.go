@@ -1,4 +1,4 @@
-package postgres
+package userpg
 
 import (
 	"context"
@@ -10,7 +10,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/humberto0/shopkeeper/internal/domain/user"
+	user "github.com/humberto0/shopkeeper/internal/user/domain"
 )
 
 var _ user.Repository = (*UserRepository)(nil)

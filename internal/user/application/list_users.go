@@ -1,12 +1,12 @@
-package user
+package userapp
 
 import (
 	"context"
 	"fmt"
 	"time"
 
-	"github.com/humberto0/shopkeeper/internal/domain/user"
 	"github.com/humberto0/shopkeeper/internal/platform/pagination"
+	user "github.com/humberto0/shopkeeper/internal/user/domain"
 )
 
 type listUsersRepository interface {
