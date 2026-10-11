@@ -2,6 +2,8 @@ package config
 
 import (
 	"fmt"
+	"net"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -12,13 +14,6 @@ type Config struct {
 	Serve    ServerConfig
 	Database DatabaseConfig
 	CORS     CORSConfig
-}
-
-func (d DatabaseConfig) DSN() string {
-	return fmt.Sprintf(
-		"postgres://%s:%s@%s:%s/%s?sslmode=%s",
-		d.User, d.Password, d.Host, d.Port, d.Name, d.SSLMode,
-	)
 }
 
 type ServerConfig struct {
@@ -36,12 +31,13 @@ type CORSConfig struct {
 }
 
 type DatabaseConfig struct {
-	Host            string
-	Port            string
-	User            string
-	Password        string
-	Name            string
-	SSLMode         string
+	// URL is the full connection string (DSN). It is the same value
+	// golang-migrate, the Makefile and the secret manager use, so a single
+	// secret configures everything.
+	URL string
+	// FromParts reports that URL was built from the DB_* local-dev fallback
+	// because DATABASE_URL was not set.
+	FromParts       bool
 	MaxConnections  int32
 	MinConnections  int32
 	MaxConnIdleTime time.Duration
@@ -51,7 +47,7 @@ type DatabaseConfig struct {
 func Load() (*Config, error) {
 	loadDotEnv(".env")
 
-	dbPassword, err := required("DB_PASSWORD")
+	dbURL, fromParts, err := databaseURL()
 	if err != nil {
 		return nil, err
 	}
@@ -105,12 +101,8 @@ func Load() (*Config, error) {
 			ShutdownTimeout: shutdownTimeout,
 		},
 		Database: DatabaseConfig{
-			Host:            env("DB_HOST", "localhost"),
-			Port:            env("DB_PORT", "5432"),
-			User:            env("DB_USER", "shopkeeper"),
-			Password:        dbPassword,
-			Name:            env("DB_NAME", "shopkeeper"),
-			SSLMode:         env("DB_SSL_MODE", "disable"),
+			URL:             dbURL,
+			FromParts:       fromParts,
 			MaxConnections:  int32(maxConns),
 			MinConnections:  int32(minConns),
 			MaxConnIdleTime: maxConnIdleTime,
@@ -120,6 +112,31 @@ func Load() (*Config, error) {
 			AllowedOrigins: envList("CORS_ALLOWED_ORIGINS", []string{"*"}),
 		},
 	}, nil
+}
+
+// databaseURL returns DATABASE_URL when set. Otherwise it builds the DSN
+// from the DB_* variables, a local-dev fallback where only DB_PASSWORD is
+// required. fromParts reports which source was used.
+func databaseURL() (dsn string, fromParts bool, err error) {
+	if dsn := os.Getenv("DATABASE_URL"); dsn != "" {
+		return dsn, false, nil
+	}
+
+	password := os.Getenv("DB_PASSWORD")
+	if password == "" {
+		return "", false, fmt.Errorf("config: DATABASE_URL or DB_PASSWORD is required")
+	}
+
+	// url.URL escapes reserved characters in the user, password and
+	// database name, which plain string formatting would not.
+	u := url.URL{
+		Scheme:   "postgres",
+		User:     url.UserPassword(env("DB_USER", "shopkeeper"), password),
+		Host:     net.JoinHostPort(env("DB_HOST", "localhost"), env("DB_PORT", "5432")),
+		Path:     "/" + env("DB_NAME", "shopkeeper"),
+		RawQuery: url.Values{"sslmode": {env("DB_SSL_MODE", "disable")}}.Encode(),
+	}
+	return u.String(), true, nil
 }
 
 // loadDotEnv is a local-dev convenience only: in Docker/CI the real
@@ -163,14 +180,6 @@ func env(key, fallback string) string {
 		return value
 	}
 	return fallback
-}
-
-func required(key string) (string, error) {
-	value := os.Getenv(key)
-	if value == "" {
-		return "", fmt.Errorf("config: %s is required", key)
-	}
-	return value, nil
 }
 
 func envInt(key string, fallback int) (int, error) {
