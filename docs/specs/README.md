@@ -1,6 +1,6 @@
 # Specs board
 
-**Progress:** 3/6 done · 1 in progress · 2 in backlog
+**Progress:** 4/6 done · 0 in progress · 2 in backlog
 **Last updated:** 2026-10-11
 
 Source of the backlog: the "known pending items in shopkeeper" list from the `backend-go` skill.
@@ -10,7 +10,7 @@ Source of the backlog: the "known pending items in shopkeeper" list from the `ba
 | 001 | [Feature-first layout](archive/001-feature-first-layout.md) | ✅ Done | backend-core, backend-go | — | — | 2026-10-11 | 2026-10-11 |
 | 002 | [Error envelope and 409 conflict](archive/002-error-envelope-and-409-conflict.md) | ✅ Done | backend-core, backend-go | 001 | 004, 005, 006 | 2026-10-11 | 2026-10-11 |
 | 003 | [Liveness and readiness health](archive/003-liveness-readiness-health.md) | ✅ Done | backend-core, backend-go | 001, 002 | 004, 005, 006 | 2026-10-11 | 2026-10-11 |
-| 004 | [Canonical DATABASE_URL config](in-progress/004-canonical-database-url-config.md) | 🚧 In progress | backend-core, backend-go, devops-core | 001 | 002, 003, 006 | 2026-10-11 | — |
+| 004 | [Canonical DATABASE_URL config](archive/004-canonical-database-url-config.md) | ✅ Done | backend-core, backend-go, devops-core | 001 | 002, 003, 006 | 2026-10-11 | 2026-10-11 |
 | 005 | [Makefile canonical targets](backlog/005-makefile-canonical-targets.md) | ⏳ Backlog | backend-core, backend-go, devops-core | 001 | 002, 003, 006 | — | — |
 | 006 | [Check constraint naming](backlog/006-check-constraint-naming.md) | ⏳ Backlog | backend-core, backend-go, db-core | — | 002, 003, 004, 005 | — | — |
 
