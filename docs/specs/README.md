@@ -1,6 +1,6 @@
 # Specs board
 
-**Progress:** 9/10 done · 1 in progress · 0 in backlog
+**Progress:** 10/10 done · 0 in progress · 0 in backlog
 **Last updated:** 2026-10-16
 
 Source of the backlog: the "known pending items in shopkeeper" list from the `backend-go` skill.
@@ -16,14 +16,14 @@ Source of the backlog: the "known pending items in shopkeeper" list from the `ba
 | 007 | [ADR 0011: one deployment and database per client](archive/007-single-tenant-adr.md) | ✅ Done | arch-core | — | — | 2026-10-16 | 2026-10-16 |
 | 008 | [Data model without tenants](archive/008-single-tenant-data-model.md) | ✅ Done | db-core, arch-core | 007 | 009 | 2026-10-16 | 2026-10-16 |
 | 009 | [Architecture, scope and stories without tenants](archive/009-single-tenant-architecture-docs.md) | ✅ Done | arch-core, analyst-core | 007 | 008 | 2026-10-16 | 2026-10-16 |
-| 010 | [GitHub issues #19–#71 without tenants](in-progress/010-single-tenant-github-issues.md) | 🚧 In progress | git-core | 007, 008, 009 | — | 2026-10-16 | — |
+| 010 | [GitHub issues #19–#71 without tenants](archive/010-single-tenant-github-issues.md) | ✅ Done | git-core | 007, 008, 009 | — | 2026-10-16 | 2026-10-16 |
 
 ## Order and rationale
 1. **001** first: every other spec touches files that move in 001, so doing it first avoids rebasing the rest.
 2. **002** next: it fixes the public error contract (status codes and body shape) that 003 reuses for the readiness error response.
 3. **003, 004, 005** are independent of each other; 004 and 005 both edit `Makefile`/CI-adjacent files, so pick one branch at a time for those two.
 4. **006** is a pure migration and can run at any time, including before 001.
-5. **007–010** remove the multi-tenant premise (Shopkeeper is a per-client template, not a SaaS). **007** records the decision first; **008** and **009** touch different files and can run in parallel; **010** rewrites the GitHub issues last, because they link to the docs changed in 008/009. Phase 1 issue #19 onward waits for 010.
+5. **007–010** remove the multi-tenant premise (Shopkeeper is a per-client template, not a SaaS). **007** records the decision first; **008** and **009** touch different files and can run in parallel; **010** rewrites the GitHub issues last, because they link to the docs changed in 008/009. Phase 1 issue #19 onward was waiting for 010 (done).
 
 ## How to work on a spec
 1. Start a fresh session.

@@ -1,0 +1,70 @@
+# 010 — GitHub issues #19–#71 without tenants
+
+| | |
+|---|---|
+| **Status** | ✅ Done |
+| **Created** | 2026-10-16 |
+| **Started** | 2026-10-16 |
+| **Finished** | 2026-10-16 |
+| **Depends on** | 007-single-tenant-adr, 008-single-tenant-data-model, 009-single-tenant-architecture-docs |
+| **Parallel with** | — |
+| **Skills** | git-core |
+
+## Goal
+Rewrite the open Phase 1 issues so they match ADR 0011 and the updated docs: shared Definition of done without tenant rules, the tenancy/identity foundation issues re-scoped, and tenant mentions removed from the rest.
+
+## Scope
+- GitHub issues #19–#71 of `humberto0/shopkeeper` (bodies and some titles), edited with `gh issue edit`
+- No repository files
+
+## Must not change
+- Issue numbers, order, labels (except `ctx:tenancy` → `ctx:business`) and dependencies between non-tenant issues
+- Acceptance criteria that are not about tenancy
+
+## Tasks
+- [x] 2026-10-16 — Back up every body to the scratchpad (`gh issue view --json body`) before editing
+- [x] 2026-10-16 — **Definition of done** (53 issues, identical block) — replace:
+  - "New tables: `tenant_id`, `PRIMARY KEY (tenant_id, id)`, composite FKs, RLS …" → "New tables: `id uuid PRIMARY KEY` (UUIDv7), plain FKs; `down` migration tested; constraint/index names follow `<table>_<column>_<rule>_check` / `_idx`"
+  - "Every query runs through `InTenantTx` / `postgres.Executor(ctx)`; tenant only from the session" → "Use cases that write more than one row/aggregate run through `tx.Runner`; repositories get their executor from `postgres.Executor(ctx)`"
+  - "another tenant's id → 404" → "unknown id → 404"
+- [x] 2026-10-16 — **#19** → `feat(business): business profile, settings, locations and counters` — singleton `business`, `locations` (one default), `counters`, DB roles doc + docker init, domain invariants; AC: second `business` row rejected, two default locations rejected, down/up works; branch `feat/business-schema`
+- [x] 2026-10-16 — **#20** → `feat(platform): transaction runner and executor in context` — `tx.Runner.InTx` (+ read-only), `postgres.Executor(ctx)` returns the tx in ctx or the pool, commit/rollback/panic; drop `set_config`, `platform/tenant`, `ErrNoTenantTx`; branch `feat/tx-runner`
+- [x] 2026-10-16 — **#22** → `feat(identity): roles and permissions` — `permissions`, `roles`, `role_permissions`; `users.role` → `users.role_id` (expand → migrate → contract); BR-03 last owner on users; branch `feat/rbac`
+- [x] 2026-10-16 — **#23** → `feat(business): installation setup command` — `shopkeeper setup`: business profile, default location, system roles, first owner in one transaction; fails if already set up; password from stdin/env; branch `feat/setup-command`
+- [x] 2026-10-16 — **#24**: remove `POST /auth/tenant` and "select tenant"; dependency title of #22 updated
+- [x] 2026-10-16 — **#25**: `Principal{UserID, RoleID, Permissions}`; remove tenant-in-ctx, two-tenant fixture, cross-tenant FK test; keep "unknown id → 404"
+- [x] 2026-10-16 — **#26**: "Revoking ends that user's sessions" (no tenant); manage users, not memberships
+- [x] 2026-10-16 — **#27**: `audit_log` without RLS (keep `REVOKE UPDATE, DELETE`); "record role changes" instead of membership changes
+- [x] 2026-10-16 — **#29**: event envelope without `tenantId`; consumers open `InTx`; periodic jobs without tenant fan-out; dependency title of #20 updated
+- [x] 2026-10-16 — **#30–#68**: drop "(RLS)", "RLS," and "composite FKs"; "unique per tenant" → "unique"; drop "same SKU allowed in another tenant"; `tenant_counters` → `counters`; "seeded per tenant" → "seeded by migration"; "tenant time zone" → "business time zone"; #57 "seeded at provisioning" → "seeded by the setup command" and its dependency title
+- [x] 2026-10-16 — Links: data-model anchor `#31-tenancy` → `#31-business`; ADR 0002/0003 links → ADR 0011
+- [x] 2026-10-16 — Show the user a before/after diff of #19, #20, #22, #23, #25 and a sample of the bulk change **before applying**; apply only after approval
+- [x] 2026-10-16 — After applying: `gh issue list --json body` + grep proves no "tenant", "RLS", "membership", "InTenantTx" remains
+
+## Done when
+- `gh issue list --state open --limit 100 --json title,body | jq … | grep -iE "tenant|rls|membership|InTenantTx|provision"` returns nothing
+- Titles of re-scoped issues follow Conventional Commits and match the new suggested branches
+- Backups of the old bodies kept in the scratchpad until the user confirms
+
+## Decision log
+
+### Re-scope instead of closing
+**Before:** #19 tenants + RLS, #20 tenant tx runner, #22 memberships, #23 tenant provisioning.
+**After:** #19 business profile/locations/counters, #20 tx runner without tenant, #22 roles and permissions, #23 installation setup command.
+**Why:** none of the four became useless; the work they describe still exists in a single-client form, and keeping the numbers preserves the dependency graph and the tracking issues #72–#74.
+
+## Commits
+- No commits for the issues themselves: 53 issues edited with `gh issue edit` on 2026-10-16 (titles of #19, #20, #22, #23 changed); label `ctx:tenancy` renamed to `ctx:business`.
+
+## Follow-ups
+- Local branch `feat/tenancy-schema` (empty) can be deleted once #19 is renamed
+
+## Notes
+- 2026-10-16: backup in the session scratchpad (`issues/backup-2026-10-16.json`, 56 open issues); new bodies generated by `issues/build_new_bodies.py` into `issues/new/<n>.md|.title` (53 issues, #19–#71; tracking issues #72–#74 need no change). Waiting for the user's approval before `gh issue edit`. Label plan: `gh label edit ctx:tenancy --name ctx:business` (keeps it on #19 and #23).
+- Editing issues is outward-facing: confirm with the user before running the bulk edit.
+
+## Resumo (pt-BR)
+**O que foi feito:** as 53 issues abertas da Fase 1 (#19 a #71) foram atualizadas no GitHub. A "Definition of done" comum perdeu as regras de tenant (`tenant_id`, RLS, `InTenantTx`). As issues #19, #20, #22 e #23 foram reescritas e ganharam título novo (perfil da empresa, runner de transação, papéis e permissões, comando de setup), e as outras perderam as menções a RLS e tenant. O label `ctx:tenancy` virou `ctx:business`. As issues de acompanhamento #72 a #74 não precisaram mudar.
+**Por quê:** as issues agora seguem o ADR 0011 e os docs atualizados nas specs 007 a 009.
+**Como verificar:** `gh issue list --state open --limit 100 --json title,body` filtrado por "tenant", "RLS", "membership" ou "InTenantTx" não retorna nada. O backup dos textos antigos está no scratchpad da sessão (`issues/backup-2026-10-16.json`).
+**Pendências:** a branch local vazia `feat/tenancy-schema` pode ser apagada. A próxima issue a implementar é a #19, na branch `feat/business-schema`.
