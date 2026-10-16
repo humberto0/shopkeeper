@@ -76,7 +76,7 @@
    "autoResize": true
   },
   {
-   "id": "ctx_tenancy",
+   "id": "ctx_business",
    "type": "rectangle",
    "x": 0,
    "y": 0,
@@ -105,7 +105,7 @@
    "locked": false
   },
   {
-   "id": "ctxt_tenancy",
+   "id": "ctxt_business",
    "type": "text",
    "x": 30,
    "y": 14,
@@ -141,7 +141,7 @@
    "autoResize": true
   },
   {
-   "id": "h_tenants",
+   "id": "h_business",
    "type": "rectangle",
    "x": 30,
    "y": 80,
@@ -156,7 +156,7 @@
    "roughness": 0,
    "opacity": 100,
    "groupIds": [
-    "g_tenants"
+    "g_business"
    ],
    "frameId": null,
    "roundness": {
@@ -172,7 +172,7 @@
    "locked": false
   },
   {
-   "id": "ht_tenants",
+   "id": "ht_business",
    "type": "text",
    "x": 38,
    "y": 90.0,
@@ -187,7 +187,7 @@
    "roughness": 0,
    "opacity": 100,
    "groupIds": [
-    "g_tenants"
+    "g_business"
    ],
    "frameId": null,
    "roundness": null,
@@ -210,7 +210,7 @@
    "autoResize": true
   },
   {
-   "id": "b_tenants",
+   "id": "b_business",
    "type": "rectangle",
    "x": 30,
    "y": 120,
@@ -225,7 +225,7 @@
    "roughness": 0,
    "opacity": 100,
    "groupIds": [
-    "g_tenants"
+    "g_business"
    ],
    "frameId": null,
    "roundness": {
@@ -238,7 +238,7 @@
    "boundElements": [
     {
      "type": "text",
-     "id": "bt_tenants"
+     "id": "bt_business"
     }
    ],
    "updated": 1760572800000,
@@ -246,7 +246,7 @@
    "locked": false
   },
   {
-   "id": "bt_tenants",
+   "id": "bt_business",
    "type": "text",
    "x": 40,
    "y": 130,
@@ -261,7 +261,7 @@
    "roughness": 0,
    "opacity": 100,
    "groupIds": [
-    "g_tenants"
+    "g_business"
    ],
    "frameId": null,
    "roundness": null,
@@ -279,12 +279,12 @@
    "fontFamily": 3,
    "textAlign": "left",
    "verticalAlign": "top",
-   "containerId": "b_tenants",
+   "containerId": "b_business",
    "lineHeight": 1.25,
    "autoResize": true
   },
   {
-   "id": "h_tenant_counters",
+   "id": "h_counters",
    "type": "rectangle",
    "x": 30,
    "y": 320.0,
@@ -299,7 +299,7 @@
    "roughness": 0,
    "opacity": 100,
    "groupIds": [
-    "g_tenant_counters"
+    "g_counters"
    ],
    "frameId": null,
    "roundness": {
@@ -315,7 +315,7 @@
    "locked": false
   },
   {
-   "id": "ht_tenant_counters",
+   "id": "ht_counters",
    "type": "text",
    "x": 38,
    "y": 330.0,
@@ -330,7 +330,7 @@
    "roughness": 0,
    "opacity": 100,
    "groupIds": [
-    "g_tenant_counters"
+    "g_counters"
    ],
    "frameId": null,
    "roundness": null,
@@ -353,7 +353,7 @@
    "autoResize": true
   },
   {
-   "id": "b_tenant_counters",
+   "id": "b_counters",
    "type": "rectangle",
    "x": 30,
    "y": 360.0,
@@ -368,7 +368,7 @@
    "roughness": 0,
    "opacity": 100,
    "groupIds": [
-    "g_tenant_counters"
+    "g_counters"
    ],
    "frameId": null,
    "roundness": {
@@ -381,7 +381,7 @@
    "boundElements": [
     {
      "type": "text",
-     "id": "bt_tenant_counters"
+     "id": "bt_counters"
     }
    ],
    "updated": 1760572800000,
@@ -389,7 +389,7 @@
    "locked": false
   },
   {
-   "id": "bt_tenant_counters",
+   "id": "bt_counters",
    "type": "text",
    "x": 40,
    "y": 370.0,
@@ -404,7 +404,7 @@
    "roughness": 0,
    "opacity": 100,
    "groupIds": [
-    "g_tenant_counters"
+    "g_counters"
    ],
    "frameId": null,
    "roundness": null,
@@ -422,7 +422,7 @@
    "fontFamily": 3,
    "textAlign": "left",
    "verticalAlign": "top",
-   "containerId": "b_tenant_counters",
+   "containerId": "b_counters",
    "lineHeight": 1.25,
    "autoResize": true
   },
