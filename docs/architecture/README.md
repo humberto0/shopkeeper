@@ -8,15 +8,15 @@
 
 | Attribute | Target | Where it shows up |
 |---|---|---|
-| Tenant isolation | Zero cross-tenant reads or writes, enforced by the database and not only by code | [ADR 0002](../adr/0002-use-shared-schema-multi-tenancy-with-rls.md) |
+| Client isolation | Each client runs its own deployment and database; no client data shares a process or a schema | [ADR 0011](../adr/0011-use-one-deployment-and-database-per-client.md) |
 | Stock correctness | Never sell more than is on hand, across all channels | [ADR 0006](../adr/0006-use-batch-based-inventory-with-movement-ledger.md) |
 | Money correctness | No floats; deterministic rounding; prices and costs frozen at sale time | [ADR 0005](../adr/0005-use-fixed-point-money-quantity-and-rate.md) |
 | Counter-sale speed | 3-item sale recorded in ≤ 30 s on a phone; API p95 ≤ 300 ms | PWA UX, single round trip per sale |
 | Auditability | Every change to price, stock, sale or permission answers "who, when, before, after" | `audit_log`, immutable `stock_movements` |
 | Operability for one developer | One deployable backend, one database, no extra broker | [ADR 0001](../adr/0001-use-modular-monolith-with-bounded-contexts.md), [ADR 0007](../adr/0007-use-river-on-postgres-for-jobs-and-outbox.md) |
-| Evolvability to SaaS | New tenants, new fiscal regimes and new providers without rewriting the core | Ports/adapters per integration, data-driven tax tables |
+| Reusable as a per-client template | A new client is a new deploy plus configuration (env vars, `business` row, seeded data); new fiscal regimes and providers without rewriting the core | [ADR 0011](../adr/0011-use-one-deployment-and-database-per-client.md), ports/adapters per integration, data-driven tax tables |
 
-**Order of magnitude (10× the first tenant):** ~10 users, ~5k SKUs, ~500 sales/day, ~20 GB/year including images. A single Postgres instance and a single API process have plenty of room. Designing for 10× (not 1000×) is what keeps this a monolith.
+**Order of magnitude (10× the first client):** ~10 users, ~5k SKUs, ~500 sales/day, ~20 GB/year including images. A single Postgres instance and a single API process have plenty of room. Designing for 10× (not 1000×) is what keeps this a monolith.
 
 ## 2. System context (C4 level 1) — target
 
@@ -66,14 +66,14 @@ flowchart LR
     web[Web app<br/><i>Next.js, installable PWA</i>]:::container
     api[API<br/><i>Go, net/http, cmd/api</i>]:::container
     worker[Worker<br/><i>Go, River, cmd/worker</i>]:::container
-    db[(PostgreSQL 18<br/><i>business data, RLS, River jobs</i>)]:::db
+    db[(PostgreSQL 18<br/><i>business data, River jobs</i>)]:::db
   end
   s3[(Object storage<br/><i>S3-compatible</i>)]:::external
   push[Web Push services<br/><i>browser vendors</i>]:::external
 
   users -- "HTTPS" --> web
   web -- "REST/JSON, session cookie" --> api
-  api -- "SQL (pgx), SET LOCAL app.tenant_id" --> db
+  api -- "SQL (pgx)" --> db
   api -- "InsertTx job = outbox" --> db
   worker -- "Fetch jobs, SQL" --> db
   worker -- "VAPID push" --> push
@@ -87,7 +87,7 @@ flowchart LR
 
 - **One Go module, two binaries** (`cmd/api`, `cmd/worker`) built from the same code. They can run in one process at first (`api --with-worker`) and be split when the worker needs its own scaling. Splitting is just a deployment change.
 - **No Redis.** Jobs, the outbox and sessions all live in Postgres ([ADR 0007](../adr/0007-use-river-on-postgres-for-jobs-and-outbox.md)). One fewer thing to back up, monitor and pay for.
-- **The web app** is a separate container ([ADR 0010](../adr/0010-use-one-nextjs-app-for-admin-pwa-and-storefront.md)). In Phase 2 the same app serves the storefront with SSR and resolves the tenant from the host name.
+- **The web app** is a separate container ([ADR 0010](../adr/0010-use-one-nextjs-app-for-admin-pwa-and-storefront.md)). In Phase 2 the same app serves the storefront with SSR on the client's own domain.
 
 ## 4. Bounded contexts
 
@@ -104,7 +104,7 @@ flowchart TB
     customer[Customers]
   end
   subgraph support[Supporting — Phase 1]
-    tenancy[Tenancy]
+    business[Business]
     identity[Identity & Access]
     notification[Notifications]
     importer[Data import]
@@ -118,7 +118,6 @@ flowchart TB
     fiscal[Fiscal<br/><i>P2</i>]
     marketing[Marketing & Promotions<br/><i>P3</i>]
     assistant[AI Assistant<br/><i>P4</i>]
-    billing[SaaS Billing<br/><i>P5</i>]
   end
 
   sales -- "allocate stock (sync, same tx)" --> inventory
@@ -139,8 +138,8 @@ Solid arrow = synchronous call through an interface. Dotted arrow = domain event
 
 | Context | Responsibility | Type | Phase |
 |---|---|---|---|
-| **Tenancy** | Tenant, settings, locations, plan | Supporting | 1 |
-| **Identity & Access** | Users (global identity), memberships, roles, permissions, sessions | Generic | 1 |
+| **Business** | Business profile and settings (singleton), locations, counters | Supporting | 1 |
+| **Identity & Access** | Users, roles, permissions, sessions | Generic | 1 |
 | **Catalog** | Products, variants, units of measure and conversions, categories, brands, images, compatibility | Core | 1 |
 | **Inventory** | Stock items, batches, expiry, movements, goods receipts, adjustments, FEFO allocation, (P2) reservations | Core | 1 |
 | **Pricing** | Prices per variant × unit, price history, tax profile (Simples), payment fees, pricing calculator, floor price | Core | 1 |
@@ -154,10 +153,9 @@ Solid arrow = synchronous call through an interface. Dotted arrow = domain event
 | Ordering & Checkout | Cart, checkout, online order lifecycle, reservations | Core | 2 |
 | Payments | Payment intents, gateway adapters, webhooks, idempotency | Supporting | 2 |
 | Fulfillment & Delivery | Delivery fee policy, addresses/geolocation, route sheet, delivery cost | Supporting | 2 |
-| Fiscal | Fiscal data per product, invoice issuing through an emitter port, per-tenant regime | Generic (plug-in) | 2 |
+| Fiscal | Fiscal data per product, invoice issuing through an emitter port, tax regime from the business settings | Generic (plug-in) | 2 |
 | Marketing | Promotions (incl. near-expiry), consent (LGPD), campaigns, posts, channels | Supporting | 3 |
 | AI Assistant | Conversations, tools, proposals awaiting approval, budgets | Supporting | 4 |
-| SaaS Billing | Plans, subscriptions, feature flags | Generic | 5 |
 
 **Why Reporting has no domain model:** dashboards only read and aggregate. Pushing them through aggregates would load whole sales to sum one column. Reporting is allowed to read other contexts' tables with SQL (never write), and it is the **only** context with that exception. If a query becomes slow, a materialized view or a projection fed by events replaces it without touching the other contexts.
 
@@ -171,11 +169,10 @@ An aggregate is the unit of consistency: everything inside it is saved in one tr
 
 | Context | Aggregate root | Contains | Key invariants |
 |---|---|---|---|
-| Tenancy | `Tenant` | `TenantSettings`, `Location`s | Slug unique; at least one active location; discount ceilings 0–100 % |
-| Identity | `User` | credentials | Email unique (global); password policy |
-| Identity | `Membership` | role reference | One membership per (tenant, user); at least one active owner per tenant |
+| Business | `Business` | settings, `Location`s | Exactly one business row; at least one active location and exactly one default; discount ceilings 0–100 % |
+| Identity | `User` | credentials, role reference | Email unique; password policy; at least one active user with the owner role |
 | Identity | `Role` | permission set, `max_discount_rate` | System roles cannot be deleted |
-| Catalog | `Product` | `Variant`s, `ProductUnit`s (conversion factors), images | Exactly one base unit; factor of the base unit = 1; every factor > 0; SKU unique per tenant; fractional quantities only on units that allow them |
+| Catalog | `Product` | `Variant`s, `ProductUnit`s (conversion factors), images | Exactly one base unit; factor of the base unit = 1; every factor > 0; SKU unique; fractional quantities only on units that allow them |
 | Catalog | `Category` | parent reference | No cycles |
 | Inventory | `StockItem` (variant × location) | `Batch`es | `on_hand = Σ batch.on_hand`; no batch below zero; FEFO order (expiry date, then receipt date) |
 | Inventory | `GoodsReceipt` | lines | Lines become batches only when the receipt is posted; posted receipts are immutable |
@@ -183,7 +180,7 @@ An aggregate is the unit of consistency: everything inside it is saved in one tr
 | Pricing | `TaxProfile` | regime, annex, manual rate, monthly rates | Manual rate overrides the computed one |
 | Sales | `Sale` | `SaleItem`s, `SalePayment`s | Σ payments = total; discount ≤ ceiling unless approved; final unit price ≥ floor price; completed sale is immutable except cancellation |
 | Sales | `DiscountApproval` | — | Decided once; only by a user with `sales.discount.approve` |
-| Customers | `Customer` | addresses, contacts | Document (CPF/CNPJ) valid and unique per tenant |
+| Customers | `Customer` | addresses, contacts | Document (CPF/CNPJ) valid and unique |
 | Finance | `Receivable` | `ReceivablePayment`s | Σ payments ≤ amount; status derived from payments and due date |
 | Finance | `Expense` | — | Amount > 0; category kind decides whether it hits the P&L |
 | Finance | `RecurringExpense` | — | Generates at most one expense per period (idempotent) |
@@ -202,7 +199,7 @@ Events are facts in the past tense. They are written to the outbox **in the same
 
 ### Phase 1
 
-| Event | Producer | Payload (besides `tenant_id`, `occurred_at`, `actor_id`) | Consumers (Phase 1 → later) |
+| Event | Producer | Payload (besides `occurred_at`, `actor_id`) | Consumers (Phase 1 → later) |
 |---|---|---|---|
 | `ProductCreated` / `ProductUpdated` / `ProductArchived` | Catalog | product id, changed fields | — → storefront cache (P2), Merchant feed (P2) |
 | `PriceChanged` | Pricing | variant, unit, old/new price, margin | Audit → storefront cache (P2), marketing (P3) |
@@ -222,7 +219,7 @@ Events are facts in the past tense. They are written to the outbox **in the same
 | `ReceivableOverdue` | Finance (daily job) | receivable id, days overdue | Notifications → WhatsApp reminder with approval (P3) |
 | `ExpenseRecorded` | Finance | expense id, category, amount | — → AI cost analysis (P4) |
 | `EffectiveTaxRateRecalculated` | Pricing (monthly job) | period, RBT12, rate | Notifications ("new rate: x %") |
-| `MembershipCreated` / `MembershipRevoked` | Identity | user, role | Audit; revoking ends all sessions |
+| `UserCreated` / `UserRoleChanged` / `UserDeactivated` | Identity | user, role | Audit; deactivating ends all sessions |
 | `ImportCompleted` | Data import | job id, created/updated/failed counts | Notifications |
 
 ### Later phases (names reserved now so that payloads are designed once)
@@ -236,7 +233,6 @@ Events are facts in the past tense. They are written to the outbox **in the same
   "eventId": "0192f0c1-...",          // UUIDv7, also the idempotency key for consumers
   "type": "inventory.stock_below_minimum",
   "version": 1,                        // payload schema version
-  "tenantId": "...",
   "actorId": "...",                    // null for jobs
   "occurredAt": "2026-10-15T14:03:00Z",
   "data": { "variantId": "...", "locationId": "...", "onHand": "3.000", "minimum": "5.000" }
@@ -269,7 +265,7 @@ sequenceDiagram
 
   Clerk->>PWA: Scan items, choose Pix, 4 % discount
   PWA->>API: POST /sales (Idempotency-Key)
-  API->>DB: BEGIN; set_config('app.tenant_id', ...)
+  API->>DB: BEGIN
   API->>DB: idempotency key already used? -> return the stored sale
   API->>Pricing: current prices + floor prices (variant x unit)
   API->>API: Sale.ApplyDiscount: 4 % <= role ceiling 5 %, price >= floor
@@ -299,14 +295,14 @@ Kept short on purpose. The `devops-core` work will decide it.
 - One small VM or container service **in São Paulo** (lowest latency to Manaus among the major clouds) running the API + worker container, plus **managed Postgres 18** with daily backups and point-in-time recovery. A restore test every month, scheduled as a job that restores into a scratch database and runs a count query.
 - The web app on a platform with an edge network (for example Vercel) or in the same VM.
 - S3-compatible storage with no egress fee for images (for example Cloudflare R2).
-- Structured logs (`slog` JSON) with `requestId` and `tenantId` on every line; metrics and error tracking added in 1c.
+- Structured logs (`slog` JSON) with `requestId` and `userId` on every line; metrics and error tracking added in 1c.
 
 ## 10. What to revisit, and when
 
 | Decision | Revisit when |
 |---|---|
 | Monolith | One context needs its own scaling or release cadence (e.g. the storefront under a traffic peak that the admin should not feel) |
-| Shared schema | A customer contractually requires a dedicated database → move that tenant to its own database with the same schema |
+| One deployment per client | Many clients need the same operation at once (central upgrades, shared reporting) → a new ADR that supersedes [ADR 0011](../adr/0011-use-one-deployment-and-database-per-client.md) |
 | River on Postgres | Job throughput above ~1k/s, or Postgres becomes the bottleneck |
 | Reporting over live tables | Dashboard p95 > 1 s → materialized views refreshed by jobs |
 | No offline mode | Store connectivity problems reported more than once a week |

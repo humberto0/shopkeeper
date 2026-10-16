@@ -5,10 +5,10 @@
 - **Deciders:** Humberto
 
 ## Context
-Phase 1 needs a mobile-first admin installable as a PWA. Phase 2 needs a public storefront with SSR/SSG for SEO, resolved per tenant by host name. One developer maintains both.
+Phase 1 needs a mobile-first admin installable as a PWA. Phase 2 needs a public storefront with SSR/SSG for SEO, served on the client's own domain. One developer maintains both.
 
 ## Decision
-One Next.js (App Router, TypeScript) application in `web/` in the same repository, with two route groups: `(admin)` served on the app host (client-heavy, PWA, Web Push) and `(store)` served on tenant hosts (server components, SSG/ISR, schema.org). Middleware resolves the tenant from the host for the store. Shared UI components, i18n (pt-BR first) and API types generated from the OpenAPI spec of the Go API.
+One Next.js (App Router, TypeScript) application in `web/` in the same repository, with two route groups: `(admin)` served on the app host (client-heavy, PWA, Web Push) and `(store)` served on the client's store host (server components, SSG/ISR, schema.org). Each client deploy serves one store, so the store needs no host-based routing. Shared UI components, i18n (pt-BR first) and API types generated from the OpenAPI spec of the Go API.
 
 ## Alternatives considered
 | Option | Pros | Cons |
@@ -19,5 +19,5 @@ One Next.js (App Router, TypeScript) application in `web/` in the same repositor
 
 ## Consequences
 - Positive: Phase 2 starts with the design system and auth already done.
-- Negative: careful cache separation (admin pages never cached; store pages cached per tenant).
+- Negative: careful cache separation (admin pages never cached; store pages cached by page).
 - Follow-ups: React Native app (Phase 5) reuses the API and generated types, not the web components. Revisit separation if the storefront needs its own release cadence.

@@ -2,10 +2,10 @@
 
 - **Status:** Proposed
 - **Date:** 2026-10-16
-- **Deciders:** Humberto (to validate with the tenant's accountant)
+- **Deciders:** Humberto (to validate with the client's accountant)
 
 ## Context
-The tenant is in Simples Nacional, Annex I (commerce). Prices must include the **effective** rate, which depends on the gross revenue of the last 12 months (RBT12). The tables are set by law (LC 123/2006, amended by LC 155/2016) and the tax reform (LC 214/2025) changes the rules year by year from 2026 to 2033. Some products (ICMS tax substitution, single-phase PIS/COFINS) have a lower real rate. The system has no revenue history on go-live.
+The first client is in Simples Nacional, Annex I (commerce). Prices must include the **effective** rate, which depends on the gross revenue of the last 12 months (RBT12). The tables are set by law (LC 123/2006, amended by LC 155/2016) and the tax reform (LC 214/2025) changes the rules year by year from 2026 to 2033. Some products (ICMS tax substitution, single-phase PIS/COFINS) have a lower real rate. The system has no revenue history on go-live.
 
 ## Decision
 - Bracket tables are **reference data** (`simples_brackets`) with `valid_from`/`valid_to`, seeded by migration, never constants in code.

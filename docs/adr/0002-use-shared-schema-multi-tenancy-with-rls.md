@@ -1,8 +1,10 @@
 # 0002 — Use shared-schema multi-tenancy with RLS and composite foreign keys
 
-- **Status:** Proposed
+- **Status:** Superseded by [0011](0011-use-one-deployment-and-database-per-client.md)
 - **Date:** 2026-10-16
 - **Deciders:** Humberto
+
+> Superseded by [ADR 0011](0011-use-one-deployment-and-database-per-client.md): Shopkeeper is deployed once per client with its own database, so there is no multi-tenancy. Kept as history.
 
 ## Context
 The product must serve many small merchants (and possibly bigger ones) from day 1. A single cross-tenant leak would end the SaaS plan. Operating cost and migration effort must stay low for one developer.

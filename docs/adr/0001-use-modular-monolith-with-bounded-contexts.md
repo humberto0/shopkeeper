@@ -5,10 +5,10 @@
 - **Deciders:** Humberto (developer/owner of the product)
 
 ## Context
-Shopkeeper starts with one tenant (~2 users, a few thousand SKUs, tens of sales per day) and one developer. The roadmap covers catalog, inventory, sales, finance, an online store, fiscal, marketing and AI, and the product should become a multi-tenant SaaS. The repository already uses a feature-first layout (`internal/platform` + `internal/user/{domain,application,postgres,http,memory}`, spec 001).
+Shopkeeper is a template deployed once per client (see [ADR 0011](0011-use-one-deployment-and-database-per-client.md)). The first client has ~2 users, a few thousand SKUs and tens of sales per day, and there is one developer. The roadmap covers catalog, inventory, sales, finance, an online store, fiscal, marketing and AI. The repository already uses a feature-first layout (`internal/platform` + `internal/user/{domain,application,postgres,http,memory}`, spec 001).
 
 ## Decision
-Build **one Go module and one database**, split internally into bounded contexts (`tenancy`, `identity`, `catalog`, `inventory`, `pricing`, `sales`, `customer`, `finance`, `notification`, `importer`, `reporting`). Each context follows the existing layout. Contexts never import each other; they talk through consumer-declared interfaces wired in `internal/app`, and through domain events. `depguard` enforces the rule in CI. Two binaries (`cmd/api`, `cmd/worker`) share the same code.
+Build **one Go module and one database**, split internally into bounded contexts (`business`, `identity`, `catalog`, `inventory`, `pricing`, `sales`, `customer`, `finance`, `notification`, `importer`, `reporting`). Each context follows the existing layout. Contexts never import each other; they talk through consumer-declared interfaces wired in `internal/app`, and through domain events. `depguard` enforces the rule in CI. Two binaries (`cmd/api`, `cmd/worker`) share the same code.
 
 ## Alternatives considered
 | Option | Pros | Cons |

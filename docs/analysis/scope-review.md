@@ -2,20 +2,20 @@
 
 - **Date:** 2026-10-15
 - **Reference commit:** `cacfbf3`
-- **Input:** product brief (sections 1–7) written by the project owner, plus nine marketing images from the first tenant.
+- **Input:** product brief (sections 1–7) written by the project owner, plus nine marketing images from the first client.
 - **Related:** [architecture overview](../architecture/README.md), [Phase 1 user stories](phase-1-user-stories.md), [ADRs](../adr/README.md).
 
 This document reviews the brief before any code is written. It lists what the images revealed about the business, the risks, the gaps, and the items that are too much for an MVP.
 
 ---
 
-## 1. What the images tell us about the first tenant
+## 1. What the images tell us about the first client
 
 The brief describes the business as "consumables for print shops". The images show that it is broader than that. Several modeling decisions depend on this.
 
 | Observation (from the images) | Consequence for the model |
 |---|---|
-| The tenant (BLF Suprimentos para Comunicação Visual) sells **consumables** (eco-solvent ink in 1 L bottles, cleanroom wipes, Teflon tape, silicone profiles) | Fractional sales, batches and expiry dates apply here (inks, glues, adhesives). |
+| The client (BLF Suprimentos para Comunicação Visual) sells **consumables** (eco-solvent ink in 1 L bottles, cleanroom wipes, Teflon tape, silicone profiles) | Fractional sales, batches and expiry dates apply here (inks, glues, adhesives). |
 | It also sells **spare parts** (print heads i3200, DX5 and XP600, dampers, capping stations, encoders, pumps, flat cables, sensors, main boards) | Parts are high-value items sold one at a time. They need **compatibility** data ("fits Epson i3200") so customers and the AI can search for them. |
 | It also sells **machines** (eco-solvent printer AJ-3202i, banner welder, eyelet machine SS-808D, cutting plotter GC-1351) | Very high ticket, likely **serial numbers and warranty**, possibly installation. A machine is never sold "by the meter". |
 | "Cabeça i3200 e DX5 — **R$ 9.300,00 à vista – Pix**" | Prices **differ by payment method** (cash/Pix vs card/installments). This is legal in Brazil (Law 13.455/2017) and has to be part of pricing. |
@@ -38,13 +38,13 @@ Ordered by impact × likelihood.
 |---|---|---|---|
 | R1 | **Adoption: the counter sale is slower than the spreadsheet/notebook** | If recording a sale on the phone takes more than ~30 s, the owner and the clerk will stop doing it and the data becomes useless (no stock, no profit). | Treat the counter-sale screen as the most important UX in Phase 1. Barcode scanning with the phone camera, search by SKU or name, recent items, one tap for the payment method. Acceptance criterion: a 3-item sale in ≤ 30 s. |
 | R2 | **Bad initial data** (spreadsheet with no costs, wrong stock, duplicated items) | Profit = price − COGS. Without real batch costs, every profit number on the dashboard is wrong, and nobody trusts the system again. | Import with a dry run and an error report. A physical **stock count** on go-live day. Batches with unknown cost are flagged, and reports say "estimated" when they use them. |
-| R3 | **Tax correctness** (Simples Nacional, Zona Franca de Manaus, tax reform) | Wrong prices and wrong profit. The **tax reform** (CBS/IBS, LC 214/2025) rolls out from 2026 to 2033 and changes the rules every year. Simples companies may also choose a "hybrid" regime for CBS/IBS. ZFM sales have their own benefits. Products under ICMS tax substitution or single-phase PIS/COFINS have a **lower** DAS share. | Bracket tables are **data with validity dates**, not constants in code ([ADR 0008](../adr/0008-compute-simples-effective-rate-from-versioned-brackets.md)). A **manual rate** from the accountant always wins. Validate the numbers with the tenant's accountant before go-live. Fiscal issuing is out of Phase 1. |
-| R4 | **Cross-tenant data leak** | One bug that shows tenant A's data to tenant B ends the SaaS plan. | Three layers: tenant-scoped repositories, Postgres RLS (`FORCE`), and composite FKs `(tenant_id, id)`. An automated test fails if any table with `tenant_id` lacks RLS ([ADR 0002](../adr/0002-use-shared-schema-multi-tenancy-with-rls.md)). |
-| R5 | **Scope creep / one-person team** | The brief describes a full ERP, an e-commerce platform, a marketing tool and an AI analyst. That is years of work for one developer. | Split Phase 1 into three releases (1a, 1b, 1c), each usable on its own, and put it in front of the tenant after 1a. Everything else waits for real usage data. |
+| R3 | **Tax correctness** (Simples Nacional, Zona Franca de Manaus, tax reform) | Wrong prices and wrong profit. The **tax reform** (CBS/IBS, LC 214/2025) rolls out from 2026 to 2033 and changes the rules every year. Simples companies may also choose a "hybrid" regime for CBS/IBS. ZFM sales have their own benefits. Products under ICMS tax substitution or single-phase PIS/COFINS have a **lower** DAS share. | Bracket tables are **data with validity dates**, not constants in code ([ADR 0008](../adr/0008-compute-simples-effective-rate-from-versioned-brackets.md)). A **manual rate** from the accountant always wins. Validate the numbers with the client's accountant before go-live. Fiscal issuing is out of Phase 1. |
+| R4 | **Template drift between client copies** | Each client runs its own copy ([ADR 0011](../adr/0011-use-one-deployment-and-database-per-client.md)). If a fix or a client-specific change is made only in one copy, the copies diverge and every upgrade becomes a manual merge. | Per-client differences live in configuration (env vars, the `business` row, seeded data), never in edits to the core. Core changes land in the template first and each client deploy upgrades from it. |
+| R5 | **Scope creep / one-person team** | The brief describes a full ERP, an e-commerce platform, a marketing tool and an AI analyst. That is years of work for one developer. | Split Phase 1 into three releases (1a, 1b, 1c), each usable on its own, and put it in front of the client after 1a. Everything else waits for real usage data. |
 | R6 | **Overselling between channels** | Counter, WhatsApp and (later) the website draw on the same shelf. | Phase 1: a row lock on the `stock_items` row inside the sale transaction. Phase 2: reservations with expiry for online checkout ([ADR 0006](../adr/0006-use-batch-based-inventory-with-movement-ledger.md)). |
 | R7 | **Unstable connectivity at the store** | A sale that cannot be recorded is a sale that is lost, or recorded twice. | Idempotency key on every write from the PWA, so a double tap or a retry never duplicates a sale. Offline mode is **out of** Phase 1 (complex conflict handling); revisit if outages are frequent. |
 | R8 | **Meta/Google approval processes** | The WhatsApp Cloud API, the Instagram Graph API and the Google Business Profile API all need business verification, app review or an access request, which can take weeks. | Start the verification process during Phase 2 so it is ready for Phase 3. Never use unofficial WhatsApp APIs (risk of the number being banned). |
-| R9 | **LLM cost and wrong numbers** | AI that invents numbers destroys trust; AI without limits destroys the margin of a SaaS plan. | Phase 4 only. Tools only, no free SQL, budgets per tenant (see the LLM section of the integrations doc). |
+| R9 | **LLM cost and wrong numbers** | AI that invents numbers destroys trust; AI without limits blows the client's budget. | Phase 4 only. Tools only, no free SQL, budgets per deployment (see the LLM section of the integrations doc). |
 
 ---
 
@@ -57,15 +57,15 @@ Grouped by phase in which they need an answer.
 | # | Gap | Proposed default |
 |---|---|---|
 | G1 | **The clerk receives goods but "does not see costs".** Who enters the purchase cost? | The clerk records quantities, supplier, invoice number and expiry dates. The cost field is **write-only** for the clerk (they can type it from the supplier invoice but cannot read it back). If left empty, the batch is `cost_pending` and the owner completes it. **Question for the owner.** |
-| G2 | **Prices by payment method** (Pix/cash vs card) | A price is stored per variant and sale unit. The tenant sets a **card surcharge** (or a cash discount) per payment method. The counter screen shows both prices. |
+| G2 | **Prices by payment method** (Pix/cash vs card) | A price is stored per variant and sale unit. The client sets a **card surcharge** (or a cash discount) per payment method. The counter screen shows both prices. |
 | G3 | **Merchandise purchases are not expenses** | The brief lists "compras de mercadoria" next to fuel and rent. If it is counted as an expense, profit is counted twice (purchase + COGS). Expense categories get a `kind`: `operating`, `inventory_purchase`, `tax`, `owner_withdrawal`. Only `operating` and `tax` hit the P&L. Inventory purchases hit cash flow only. |
 | G4 | **Owner withdrawals vs salary** | Small businesses often mix the owner's personal money with the business's. `owner_withdrawal` is a separate kind: it shows in cash flow but is not an expense. |
 | G5 | **RBT12 history** | The Simples effective rate needs the gross revenue of the **last 12 months**. On go-live the system has none. The owner (or accountant) enters the monthly revenue of the previous 12 months. |
 | G6 | **Initial stock count** (inventário inicial) | Import creates an `opening_balance` batch per item. A count screen to confirm quantities before go-live. |
 | G7 | **Sale cancellation and returns** | Cancelling returns the quantities **to the same batches**, reverses receivables and is audited. A partial return is Phase 1.x. |
-| G8 | **Stock locations** | Bigger customers (Phase 5) have several stores or a warehouse. Adding a location later means changing every stock key. A `locations` table now with one default location per tenant costs almost nothing. |
+| G8 | **Stock locations** | Bigger customers (Phase 5) have several stores or a warehouse. Adding a location later means changing every stock key. A `locations` table now with one default location costs almost nothing. |
 | G9 | **Split payments** | A counter sale paid partly in cash and partly with Pix. A sale has **n payments**. |
-| G10 | **Sale numbering** | Customers and the owner talk about "venda 1234", not UUIDs. A sequential number per tenant. |
+| G10 | **Sale numbering** | Customers and the owner talk about "venda 1234", not UUIDs. A sequential number per installation. |
 | G11 | **Who can cancel a sale** | Permission `sales.cancel`, owner only by default, with a mandatory reason. |
 | G12 | **Credit sale with no customer document** | Credit sales require a registered customer with a CPF/CNPJ and a phone number (needed to collect payment). |
 
@@ -95,21 +95,20 @@ Grouped by phase in which they need an answer.
 | Competitor price research by AI on every price change | **Phase 4, on demand only** | Niche parts (i3200 head) have few online listings. Automatic scraping breaks website terms and is unreliable. On-demand search with source and date, plus manual entry of competitor prices. |
 | Supplier research by AI | **Phase 4, on demand** | Same reasons. |
 | Google Ads | **Remove from the roadmap** | AI budget suggestions without conversion data are guesswork. Revisit after the store has real traffic. |
-| Plans and feature flags per tenant | **Phase 5** | There is only one tenant. Keep a `plan` column on `tenants` and nothing else. |
 | Delivery fee by route distance | **Phase 2** | Phase 1 has no online checkout to charge it. Local deliveries are recorded as they happen. |
 | Automatic Instagram publishing | **Phase 3, keep** | Possible through the Graph API, but needs a Facebook Page and app review. Draft + one-click publish is enough. |
-| Granular RBAC UI | **Phase 1: permissions in the model, two system roles in the UI** | The model supports custom roles; the screen to create them waits for a second tenant that asks for it. |
+| Granular RBAC UI | **Phase 1: permissions in the model, two system roles in the UI** | The model supports custom roles; the screen to create them waits for a client that asks for it. |
 | 2FA for admin | **Phase 1.x** (TOTP) | Important, but does not block replacing the spreadsheet. |
 
 ---
 
 ## 5. Suggested split of Phase 1
 
-The brief's Phase 1 is roughly 3–5 months of part-time work for one developer. Splitting it lets the tenant start using it early and gives feedback before the expensive parts are built.
+The brief's Phase 1 is roughly 3–5 months of part-time work for one developer. Splitting it lets the client start using it early and gives feedback before the expensive parts are built.
 
-| Release | Goal | Content | "Done" for the tenant |
+| Release | Goal | Content | "Done" for the client |
 |---|---|---|---|
-| **1a — Replace the spreadsheet** | Know what is on the shelf and record every sale | Tenancy + RLS, auth, roles, catalog with fractional units, spreadsheet import, goods receipt with batches/expiry, stock adjustments, counter/WhatsApp sale (cash/Pix/card), discount ceiling, cancellation, audit log | The owner stops updating the spreadsheet. |
+| **1a — Replace the spreadsheet** | Know what is on the shelf and record every sale | Business setup, auth, roles, catalog with fractional units, spreadsheet import, goods receipt with batches/expiry, stock adjustments, counter/WhatsApp sale (cash/Pix/card), discount ceiling, cancellation, audit log | The owner stops updating the spreadsheet. |
 | **1b — Money** | Know who owes what and where the money went | Customers, credit sales with installments and limits, receivables and payments, overdue list, expenses with categories, recurring expenses, cash flow | The owner stops using the notebook of debts. |
 | **1c — Profit** | Know how much each sale earns and how to price | Simples effective rate, payment fees, pricing calculator, price history, margin alerts, low-stock and expiry alerts, dashboard (sales, profit, margin, top sellers) | The owner sets prices with the calculator. |
 

@@ -8,7 +8,7 @@
 Phase 1 needs periodic jobs (daily expiry scan, overdue scan, recurring expenses, monthly Simples rate), asynchronous side effects (push notifications, alerts, import commit), and domain events that must never be lost or published for a rolled-back transaction. The brief suggests "Postgres + river, or asynq with Redis".
 
 ## Decision
-Use **River** (`riverqueue/river`, jobs stored in Postgres). Domain events collected by aggregates are enqueued with `InsertTx` **in the same transaction** as the business change, which gives transactional-outbox semantics without a separate relay. A small `platform/events` package defines the envelope (`eventId`, `type`, `version`, `tenantId`, `occurredAt`, `data`) and a registry of consumers per event type; consumers are idempotent by `eventId`. Periodic jobs use River's periodic job support. Each job sets the tenant before touching business tables.
+Use **River** (`riverqueue/river`, jobs stored in Postgres). Domain events collected by aggregates are enqueued with `InsertTx` **in the same transaction** as the business change, which gives transactional-outbox semantics without a separate relay. A small `platform/events` package defines the envelope (`eventId`, `type`, `version`, `occurredAt`, `data`) and a registry of consumers per event type; consumers are idempotent by `eventId`. Periodic jobs use River's periodic job support.
 
 ## Alternatives considered
 | Option | Pros | Cons |

@@ -6,7 +6,7 @@
 
 ## How to read this
 
-- **Personas:** *Owner* (role `owner`), *Clerk* (role `clerk`), *Operator* (whoever provisions tenants; today, the developer).
+- **Personas:** *Owner* (role `owner`), *Clerk* (role `clerk`), *Operator* (whoever installs the system for a client; today, the developer).
 - Every acceptance criterion is written so it can become a test **before** the code (TDD). The *Test level* line says where: **D** = domain unit test, **U** = use case test with in-memory repos, **I** = integration test with real Postgres, **E** = end-to-end HTTP test.
 - Money is shown in R$; tests use cents. Quantities show 3 decimals where it matters.
 - Priority: **Must** (release does not ship without it) / **Should** (ships if time allows, otherwise next release).
@@ -15,10 +15,10 @@
 
 Rules are numbered so stories, tests and code comments can cite them (`// BR-14`).
 
-### Tenancy and access
-- **BR-01** Every business record belongs to exactly one tenant. A user only sees and changes records of the tenant active in their session.
-- **BR-02** An id from another tenant behaves as "not found" (404), never as "forbidden" (403), so the existence of other tenants' data is not revealed.
-- **BR-03** A tenant always has at least one active member with the `owner` role. Revoking or demoting the last owner is rejected.
+### Access
+- **BR-01** Each installation serves one client ([ADR 0011](../adr/0011-use-one-deployment-and-database-per-client.md)). A user only does what the permissions of their role allow.
+- **BR-02** An unknown id returns "not found" (404).
+- **BR-03** There is always at least one active user with the `owner` role. Deactivating or demoting the last owner is rejected.
 - **BR-04** Fields guarded by a permission (`stock.cost.view`, `sales.profit.view`) are **absent** from the API response for users without it.
 - **BR-05** Changes to price, cost, stock, sale status, credit limit, roles and settings are written to the audit log with actor, time, before and after.
 
@@ -27,12 +27,12 @@ Rules are numbered so stories, tests and code comments can cite them (`// BR-14`
 - **BR-11** Every other unit has a factor > 0 = how many base units it contains.
 - **BR-12** A quantity with decimals is accepted only on a unit with `allows_fraction`; at most 3 decimals.
 - **BR-13** `base_quantity = quantity × factor`, rounded half-even to 3 decimals (both factors have up to 3 decimals, so the exact product can have 6).
-- **BR-14** SKU is unique per tenant, case-insensitive. Barcode is unique per tenant when present.
+- **BR-14** SKU is unique, case-insensitive. Barcode is unique when present.
 - **BR-15** A service has no stock and no expiry; selling it never touches inventory.
 
 ### Inventory
 - **BR-20** Stock leaves batches in **FEFO** order: earliest `expires_on` first; ties and batches without expiry by earliest `received_at` (FIFO).
-- **BR-21** Expired batches (`expires_on < today` in the tenant time zone) are never allocated to a sale.
+- **BR-21** Expired batches (`expires_on < today` in the business time zone) are never allocated to a sale.
 - **BR-22** A sale fails if the non-expired stock is lower than the requested base quantity. Nothing is partially saved.
 - **BR-23** Stock never goes below zero, per batch and per item.
 - **BR-24** Movements are immutable. Corrections are new movements (adjustment, cancellation).
@@ -51,7 +51,7 @@ Rules are numbered so stories, tests and code comments can cite them (`// BR-14`
   where `unit_cost` is the cost of the batches that would be allocated (in the sale unit), `tax_rate` the current effective Simples rate and `fee_rate` the fee of the chosen payment method. This applies to the owner too.
 - **BR-34** An approval is valid only for the exact draft it was requested for (same items, quantities, prices, discount), only once, and for 30 minutes.
 - **BR-35** Card payments add the method's `surcharge_rate` to the amount paid with that method; Pix and cash use the list price.
-- **BR-36** A sale is numbered sequentially per tenant without gaps.
+- **BR-36** A sale is numbered sequentially without gaps.
 - **BR-37** Sending the same sale twice with the same `Idempotency-Key` returns the first result and creates nothing new; the same key with a different body returns 409.
 - **BR-38** Only users with `sales.cancel` cancel a sale, with a mandatory reason. Cancellation returns each quantity to the batch it came from and cancels the sale's open receivables. A sale whose receivables already have payments cannot be cancelled (422).
 
@@ -62,7 +62,7 @@ Rules are numbered so stories, tests and code comments can cite them (`// BR-14`
 - **BR-43** Installments split the amount in equal cents; the remainder goes to the **last** installment (R$ 1,000.00 / 3 = 333.33 + 333.33 + 333.34).
 - **BR-44** Installment due dates are monthly from the first due date; when the day does not exist in a month, the last day of that month is used.
 - **BR-45** A payment cannot exceed the installment's remaining amount; partial payments are allowed; the installment is `paid` when fully paid.
-- **BR-46** An installment is overdue when it is open and `due_on < today` (tenant time zone).
+- **BR-46** An installment is overdue when it is open and `due_on < today` (business time zone).
 
 ### Finance
 - **BR-50** Each expense category has a kind: `operating`, `tax`, `financial` (count in the P&L) or `inventory_purchase`, `owner_withdrawal` (cash flow only).
@@ -81,7 +81,7 @@ Rules are numbered so stories, tests and code comments can cite them (`// BR-14`
 
 ### Alerts
 - **BR-70** Low stock: when `on_hand ≤ min_quantity` after a movement, open one alert per stock item and notify once; resolve it when `on_hand > min_quantity`.
-- **BR-71** Expiry: a daily job (06:00, tenant time zone) notifies once per batch per threshold in `expiry_alert_days` (default 30, 15, 7) and once when the batch expires.
+- **BR-71** Expiry: a daily job (06:00, business time zone) notifies once per batch per threshold in `expiry_alert_days` (default 30, 15, 7) and once when the batch expires.
 - **BR-72** Notifications go to every active member with the permission the alert needs (`stock.read` for stock alerts, `sales.discount.approve` for approvals).
 
 ---
@@ -90,20 +90,21 @@ Rules are numbered so stories, tests and code comments can cite them (`// BR-14`
 
 ### Foundations
 
-#### US-001 Provision a tenant · Must
-As the **operator**, I want to create a tenant with its owner, so that a merchant can start using the system.
+#### US-001 Set up an installation · Must
+As the **operator**, I want to set up a fresh installation with the client's data and first owner, so that the merchant can start using the system.
 
-- **Given** a tenant slug, legal name, owner name, email and a temporary password, **when** I run `shopkeeper tenant create`, **then** the tenant, its settings with defaults, one default location, the system roles `owner` and `clerk` with the permissions of the [catalog](../architecture/data-model.md#32-identity--access), the owner's user and membership are created in one transaction.
-- **Given** the slug already exists, **then** nothing is created and the command fails with `slug already taken`.
-- **Given** the email already belongs to a user, **then** that user gets a new membership instead of a new account (global identity).
+- **Given** legal name, trade name, owner name, email and a temporary password (read from stdin or env, never from a flag), **when** I run `shopkeeper setup`, **then** the business profile with default settings, one default location, the system roles `owner` and `clerk` with the permissions of the [catalog](../architecture/data-model.md#32-identity--access) and the owner's user are created in one transaction.
+- **Given** the installation is already set up (the `business` row exists), **then** nothing is created and the command fails with `already set up`.
+- **Given** any step fails, **then** nothing is created (one transaction).
+- **Given** the setup has not run, **then** the API readiness check fails, so no request is served without a business profile.
 - **And** the owner must change the password on first login.
 - *Test level:* U, I.
 
 #### US-002 Log in and stay logged in · Must
 As an **owner or clerk**, I want to log in on my phone and stay logged in during the workday, so that I do not type the password at every sale.
 
-- **Given** valid credentials and one membership, **when** I log in, **then** I receive an `HttpOnly; Secure; SameSite=Lax` session cookie, and the active tenant is set.
-- **Given** two memberships, **then** the response lists the tenants and I must choose one before any business call (409 `tenant_selection_required`).
+- **Given** valid credentials of an active user, **when** I log in, **then** I receive an `HttpOnly; Secure; SameSite=Lax` session cookie.
+- **Given** a deactivated user, **then** the login fails with the same message as wrong credentials.
 - **Given** no activity for 12 h, **then** the next call returns 401; **given** 30 days since login, **then** 401 even with activity.
 - **Given** 5 failed attempts for the same email within 15 min, **then** the next attempt returns 429 for 15 min (the response does not say whether the email exists).
 - **When** I log out, **then** the session is revoked and the cookie no longer works.
@@ -114,8 +115,8 @@ As an **owner or clerk**, I want to log in on my phone and stay logged in during
 As the **owner**, I want to add my clerk and remove access when needed, so that only the right people use the system.
 
 - **When** I create a member with name, email, role `clerk` and a temporary password, **then** the user can log in and must change the password.
-- **When** I revoke a membership, **then** all sessions of that user **for this tenant** stop working at the next request.
-- **Given** I am the only owner, **when** I try to revoke or demote myself, **then** 422 `last_owner` (BR-03).
+- **When** I deactivate a user, **then** all sessions of that user stop working at the next request.
+- **Given** I am the only owner, **when** I try to deactivate or demote myself, **then** 422 `last_owner` (BR-03).
 - **And** each change is in the audit log (BR-05).
 - *Test level:* U, I.
 
@@ -124,8 +125,7 @@ As the **owner**, I want the clerk to never see costs, margins or profit, so tha
 
 - **Given** a clerk, **when** they call any endpoint that needs a permission they lack, **then** 403 `forbidden`.
 - **Given** a clerk, **when** they read stock or a sale, **then** the JSON has no `unitCost`, `cogs`, `profit` or `margin` keys at all (BR-04).
-- **Given** a user of tenant A, **when** they request a product id of tenant B, **then** 404 (BR-02).
-- **And** an integration test proves that tenant A's transaction cannot read, update or **reference by FK** a row of tenant B, and the RLS guard query returns no table.
+- **Given** an id that does not exist, **then** 404 (BR-02).
 - *Test level:* U, I, E.
 
 #### US-005 Audit sensitive changes · Must
@@ -153,7 +153,7 @@ As the **owner**, I want to register a product with its purchase and sale units,
 
 - **Given** name, category, base unit `folha`, and a unit `cx` with factor 500 marked as purchase and sale unit, **when** I save, **then** the product has one default variant with the SKU I typed, and two units.
 - **Given** a second base unit or a factor ≤ 0, **then** 422 (BR-10, BR-11).
-- **Given** a SKU already used in my tenant (any case), **then** 409 `sku_taken`; **given** the same SKU in another tenant, **then** it is accepted (BR-14).
+- **Given** a SKU already used (any case), **then** 409 `sku_taken` (BR-14).
 - **Given** kind `service`, **then** the product has no stock and `tracks_expiry` is rejected (BR-15).
 - **Given** a product with variants "Cyan, Magenta, Yellow, Black", **then** each variant has its own SKU and shares the product's units.
 - **Example (D):** `NewProduct(base="m", units=[{"rl", 50}])` → `ToBase(2.5, "m") = 2.500`, `ToBase(1, "rl") = 50.000`; `ToBase(2.5, "un")` on a unit without fraction → `ErrFractionNotAllowed` (BR-12).
@@ -308,7 +308,7 @@ As the **owner**, I want to see the day's sales with their profit; as the **cler
 As the **clerk**, I want to register a customer (print shop or person), so that I can sell on account and know who buys.
 
 - **Given** kind `company` and a CNPJ, **then** the check digits are validated and name/address are pre-filled from the public lookup when available; **given** kind `person`, **then** the CPF is validated.
-- **Given** a document already registered in my tenant, **then** 409 with the existing customer's id.
+- **Given** a document already registered, **then** 409 with the existing customer's id.
 - **Given** a customer without document, **then** it is accepted (cash sales), but not eligible for credit (BR-40).
 - *Test level:* D (CPF/CNPJ validators), U.
 
@@ -364,7 +364,7 @@ As the **clerk**, I want to record the fuel I paid, with a photo of the receipt,
 #### US-051 Manage expense categories · Must
 As the **owner**, I want categories with the right kind, so that buying merchandise does not count as an expense twice.
 
-- **Given** a new tenant, **then** the system categories exist: Gasolina (operating, delivery cost), Aluguel do carro (operating, fixed, delivery cost), Aluguel da loja (operating, fixed), Energia, Internet, Salário/Comissão (operating, fixed), Taxas (financial), Impostos/DAS (tax), Compra de mercadoria (inventory_purchase), Retirada do dono (owner_withdrawal).
+- **Given** a fresh installation (after `shopkeeper setup`), **then** the system categories exist: Gasolina (operating, delivery cost), Aluguel do carro (operating, fixed, delivery cost), Aluguel da loja (operating, fixed), Energia, Internet, Salário/Comissão (operating, fixed), Taxas (financial), Impostos/DAS (tax), Compra de mercadoria (inventory_purchase), Retirada do dono (owner_withdrawal).
 - **When** I create a category, **then** I must choose its kind; the screen explains which kinds count in profit (BR-50).
 - *Test level:* U.
 
@@ -466,7 +466,7 @@ As the **owner**, I want one screen with today and this month, so that I know ho
 - **When** I open the dashboard, **then** I see for today and the current month: sales total and count, gross profit, net margin % (BR-65 using real COGS, fees and estimated tax), average ticket; plus counts of pending discount approvals, low-stock items, batches expiring in ≤ 30 days, overdue installments (amount); and the top 10 products by revenue and by profit for the month.
 - **Given** any sale in the period with `cogs_estimated`, **then** the profit shows the "estimado" badge with how many sales.
 - **Given** the clerk, **then** only today's sales count and total, and the operational counters (no profit).
-- **And** p95 ≤ 1 s with one year of data for one tenant (integration benchmark with generated data).
+- **And** p95 ≤ 1 s with one year of data (integration benchmark with generated data).
 - *Test level:* I, E.
 
 #### US-081 Sales and profit report · Should
@@ -491,7 +491,7 @@ Online store, checkout, reservations, payment gateway, fiscal issuing, delivery 
 
 ## Suggested order inside 1a
 
-1. US-001 → US-002 → US-004 (tenancy, auth, RLS guard) — nothing else is safe without them.
+1. US-001 → US-002 → US-004 (setup, auth, permissions) — nothing else is safe without them.
 2. US-005 (audit) — every later story writes to it.
 3. US-010 → US-011 → US-012 (catalog and prices).
 4. US-021 → US-024 → US-023 (stock in, view, adjust).

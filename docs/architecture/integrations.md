@@ -6,7 +6,7 @@
 ## Principles
 
 1. **Every provider sits behind a port** owned by the context that uses it (`payments.Gateway`, `fiscal.Emitter`, `delivery.RouteCalculator`, `assistant.LLM`, `notification.Channel`, `platform/storage.ObjectStorage`). Changing provider means writing one adapter. The port is shaped by **our** needs, not by the first provider's API.
-2. **Per-tenant credentials**, encrypted at rest (envelope encryption: a data key per tenant encrypted by a master key in the cloud KMS / secret manager). Never in logs.
+2. **Per-deployment credentials** in env vars or the cloud secret manager. Secrets the client types in the admin (Phase 2 integrations) are encrypted at rest with a key from the secret manager. Never in logs.
 3. **Inbound webhooks:** verify the signature, store the raw payload, answer 2xx fast, process in a job, and deduplicate by the provider's event id.
 4. **Outbound calls** run in jobs with retry + exponential backoff, with a timeout on each call and a circuit breaker for providers that fail often. A user request never waits for a third-party API except where the answer is needed on screen (route distance, Pix QR code).
 5. **Official APIs only.** Unofficial WhatsApp libraries (e.g. ones that emulate WhatsApp Web) violate Meta's terms and can get the store's number banned. Losing the number is losing the main sales channel.
@@ -35,15 +35,15 @@
 
 | Option | Strengths | Weaknesses | Fits when |
 |---|---|---|---|
-| **Mercado Pago** | Very well known by Brazilian buyers; Pix, card, payment links, point-of-sale terminals; good docs | Fees on the higher side for small merchants unless negotiated; money release terms vary | The tenant already uses a Mercado Pago card machine (one account for counter + online) |
+| **Mercado Pago** | Very well known by Brazilian buyers; Pix, card, payment links, point-of-sale terminals; good docs | Fees on the higher side for small merchants unless negotiated; money release terms vary | The client already uses a Mercado Pago card machine (one account for counter + online) |
 | **Asaas** | Strong at Pix, boleto and **collections** (reminders, recurring charges); simple API; also issues NFS-e | Card checkout UX less polished; focused on services/collections | Credit sales collection (Pix link per installment) matters more than the online store |
-| **Pagar.me (Stone)** | Mature card processing, split payments (marketplace), good for growing merchants | More onboarding/KYC; more complex API | Bigger SaaS tenants; split payments between platform and merchant |
+| **Pagar.me (Stone)** | Mature card processing, split payments (marketplace), good for growing merchants | More onboarding/KYC; more complex API | Bigger clients that need split payments (marketplace) |
 | **Efí (ex-Gerencianet)** | Pix-first, competitive Pix pricing, Pix Automático | Smaller card offering | Pix is the dominant method |
-| **Stripe** | Best developer experience, global; Pix and card in Brazil | Brazilian payment-method coverage and pricing less local; boleto/Pix limitations to check | SaaS billing of the platform itself (Phase 5), not necessarily the merchant's checkout |
+| **Stripe** | Best developer experience, global; Pix and card in Brazil | Brazilian payment-method coverage and pricing less local; boleto/Pix limitations to check | A client that sells abroad or already uses Stripe |
 
 **What to quote:** Pix fee (fixed or %), card fee per installment count, anticipation fee, settlement term (D+1, D+30), monthly fee, chargeback handling, payment link support, Pix Automático, webhook signature scheme, sandbox quality.
 
-**Recommendation:** ask the tenant which card machine they use today. If it is Mercado Pago (or Stone), staying with that ecosystem reduces reconciliation work. The `payments.Gateway` port allows **one gateway per tenant**, which is needed for SaaS anyway.
+**Recommendation:** ask the client which card machine they use today. If it is Mercado Pago (or Stone), staying with that ecosystem reduces reconciliation work. The `payments.Gateway` port lets each client deployment choose its gateway by configuration.
 
 ## Fiscal emitter (Phase 2)
 
@@ -56,7 +56,7 @@
 | **eNotas** | Focused on NFS-e and digital products | Weak fit for goods (NF-e/NFC-e) |
 | Direct SEFAZ integration | No per-document fee | A1 certificate, XML signing, schemas, contingency, rule changes from the tax reform — not worth it for one developer |
 
-**What to validate:** NFC-e in Amazonas (CSC token, contingency), Simples Nacional with CSOSN, products under ICMS-ST, **Zona Franca de Manaus** rules, the **tax reform** fields (CBS/IBS) in the 2026–2027 layouts, A1 certificate storage, cancellation and correction letter (CC-e), XML/DANFE email to the customer, and whether the emitter the tenant uses today has an API (migration without changing the accountant's workflow).
+**What to validate:** NFC-e in Amazonas (CSC token, contingency), Simples Nacional with CSOSN, products under ICMS-ST, **Zona Franca de Manaus** rules, the **tax reform** fields (CBS/IBS) in the 2026–2027 layouts, A1 certificate storage, cancellation and correction letter (CC-e), XML/DANFE email to the customer, and whether the emitter the client uses today has an API (migration without changing the accountant's workflow).
 
 ## WhatsApp Business Platform (Phase 2–3)
 
@@ -82,7 +82,7 @@
 
 - Port `assistant.LLM` with tool calling. Tools are **our read-only use cases** (`GetSalesSummary`, `ListLowStock`, ...) with the caller's permissions; there is no free-form SQL tool. Every number shown comes from a tool result and is displayed with its source.
 - Write actions return a **proposal** stored for approval (e.g. a promotion draft), never a direct change.
-- Per-tenant budget (tokens/month), prompt caching for the fixed system prompt and tool definitions, scheduled jobs (weekly summary) in low-traffic hours, and a cheaper model for drafting text.
+- Per-deployment budget (tokens/month), prompt caching for the fixed system prompt and tool definitions, scheduled jobs (weekly summary) in low-traffic hours, and a cheaper model for drafting text.
 - Uploaded documents and web pages are untrusted input (prompt injection): they never get tool access by themselves.
 
 ## Hosting (Phase 1, suggestion for `devops-core`)
