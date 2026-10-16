@@ -1,0 +1,58 @@
+# 010 — GitHub issues #19–#71 without tenants
+
+| | |
+|---|---|
+| **Status** | ⏳ Backlog |
+| **Created** | 2026-10-16 |
+| **Started** | — |
+| **Finished** | — |
+| **Depends on** | 007-single-tenant-adr, 008-single-tenant-data-model, 009-single-tenant-architecture-docs |
+| **Parallel with** | — |
+| **Skills** | git-core |
+
+## Goal
+Rewrite the open Phase 1 issues so they match ADR 0011 and the updated docs: shared Definition of done without tenant rules, the tenancy/identity foundation issues re-scoped, and tenant mentions removed from the rest.
+
+## Scope
+- GitHub issues #19–#71 of `humberto0/shopkeeper` (bodies and some titles), edited with `gh issue edit`
+- No repository files
+
+## Must not change
+- Issue numbers, order, labels (except `ctx:tenancy` → `ctx:business`) and dependencies between non-tenant issues
+- Acceptance criteria that are not about tenancy
+
+## Tasks
+- [ ] Back up every body to the scratchpad (`gh issue view --json body`) before editing
+- [ ] **Definition of done** (53 issues, identical block) — replace:
+  - "New tables: `tenant_id`, `PRIMARY KEY (tenant_id, id)`, composite FKs, RLS …" → "New tables: `id uuid PRIMARY KEY` (UUIDv7), plain FKs; `down` migration tested; constraint/index names follow `<table>_<column>_<rule>_check` / `_idx`"
+  - "Every query runs through `InTenantTx` / `postgres.Executor(ctx)`; tenant only from the session" → "Use cases that write more than one row/aggregate run through `tx.Runner`; repositories get their executor from `postgres.Executor(ctx)`"
+  - "another tenant's id → 404" → "unknown id → 404"
+- [ ] **#19** → `feat(business): business profile, settings, locations and counters` — singleton `business`, `locations` (one default), `counters`, DB roles doc + docker init, domain invariants; AC: second `business` row rejected, two default locations rejected, down/up works; branch `feat/business-schema`
+- [ ] **#20** → `feat(platform): transaction runner and executor in context` — `tx.Runner.InTx` (+ read-only), `postgres.Executor(ctx)` returns the tx in ctx or the pool, commit/rollback/panic; drop `set_config`, `platform/tenant`, `ErrNoTenantTx`; branch `feat/tx-runner`
+- [ ] **#22** → `feat(identity): roles and permissions` — `permissions`, `roles`, `role_permissions`; `users.role` → `users.role_id` (expand → migrate → contract); BR-03 last owner on users; branch `feat/rbac`
+- [ ] **#23** → `feat(business): installation setup command` — `shopkeeper setup`: business profile, default location, system roles, first owner in one transaction; fails if already set up; password from stdin/env; branch `feat/setup-command`
+- [ ] **#24**: remove `POST /auth/tenant` and "select tenant"; dependency title of #22 updated
+- [ ] **#25**: `Principal{UserID, RoleID, Permissions}`; remove tenant-in-ctx, two-tenant fixture, cross-tenant FK test; keep "unknown id → 404"
+- [ ] **#26**: "Revoking ends that user's sessions" (no tenant); manage users, not memberships
+- [ ] **#27**: `audit_log` without RLS (keep `REVOKE UPDATE, DELETE`); "record role changes" instead of membership changes
+- [ ] **#29**: event envelope without `tenantId`; consumers open `InTx`; periodic jobs without tenant fan-out; dependency title of #20 updated
+- [ ] **#30–#68**: drop "(RLS)", "RLS," and "composite FKs"; "unique per tenant" → "unique"; drop "same SKU allowed in another tenant"; `tenant_counters` → `counters`; "seeded per tenant" → "seeded by migration"; "tenant time zone" → "business time zone"; #57 "seeded at provisioning" → "seeded by the setup command" and its dependency title
+- [ ] Links: data-model anchor `#31-tenancy` → `#31-business`; ADR 0002/0003 links → ADR 0011
+- [ ] Show the user a before/after diff of #19, #20, #22, #23, #25 and a sample of the bulk change **before applying**; apply only after approval
+- [ ] After applying: `gh issue list --json body` + grep proves no "tenant", "RLS", "membership", "InTenantTx" remains
+
+## Done when
+- `gh issue list --state open --limit 100 --json title,body | jq … | grep -iE "tenant|rls|membership|InTenantTx|provision"` returns nothing
+- Titles of re-scoped issues follow Conventional Commits and match the new suggested branches
+- Backups of the old bodies kept in the scratchpad until the user confirms
+
+## Decision log
+
+## Commits
+<!-- No commits: this spec edits GitHub issues. Record the date the edits were applied. -->
+
+## Follow-ups
+- Local branch `feat/tenancy-schema` (empty) can be deleted once #19 is renamed
+
+## Notes
+- Editing issues is outward-facing: confirm with the user before running the bulk edit.
