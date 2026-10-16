@@ -16,20 +16,19 @@ internal/
     adapters.go               # glue structs that satisfy one context's port with another's use case
   platform/                   # technical, no business rules (exists today)
     config/  http/  postgres/  id/  pagination/   # existing
-    tx/                       # TxRunner: BEGIN + set_config(app.tenant_id) + executor in context
-    tenant/                   # tenant id in context, middleware that resolves it from the session
-    auth/                     # session middleware, Principal{UserID, TenantID, Permissions}, RequirePermission
+    tx/                       # Runner: BEGIN/COMMIT + executor in context
+    auth/                     # session middleware, Principal{UserID, RoleID, Permissions}, RequirePermission
     money/                    # Money (cents), Rate (1e-6), rounding (ADR 0005)
     quantity/                 # Quantity (1e-3), UnitCost (1e-6), pgx Scan/Value for numeric
-    clock/                    # Clock interface; tenant-local "today"
+    clock/                    # Clock interface; "today" in the business time zone
     events/                   # Event envelope, Publisher port, River-backed implementation, consumer registry
     jobs/                     # River client setup, queues, periodic job registration
     audit/                    # Recorder port + postgres implementation (same tx)
     idempotency/              # Idempotency-Key header parsing
     storage/                  # ObjectStorage port + S3 adapter (pre-signed URLs)
-    crypto/                   # envelope encryption for tenant secrets (Phase 2 integrations)
-  tenancy/
-  identity/                   # today's internal/user moves here (users, memberships, roles, sessions)
+    crypto/                   # encryption of integration secrets at rest (Phase 2 integrations)
+  business/                   # business profile and settings (singleton), locations, counters, setup command
+  identity/                   # users, roles, permissions, sessions
   catalog/
   inventory/
   pricing/
@@ -41,7 +40,7 @@ internal/
   reporting/                  # read-only queries; no domain/ folder
 migrations/                   # golang-migrate, one numbered pair per change (exists today)
 test/
-  integration/  e2e/  testutil/   # exists today; adds RLS guard test and multi-tenant fixtures
+  integration/  e2e/  testutil/   # exists today
 web/                          # Next.js PWA (ADR 0010)
 ```
 
@@ -119,27 +118,27 @@ func (a stockAllocatorAdapter) Allocate(ctx context.Context, lines []salesapp.Al
 
 **Why the consumer declares the interface:** Sales describes what it needs (`Allocate(lines) → allocations`) in its own words. Inventory can change its internals freely, and the Sales use case tests use a fake without starting Inventory. This is the Dependency Inversion principle applied between modules, and it is what makes a later extraction into a separate service possible (the adapter becomes an HTTP client).
 
-## 4. Transactions and tenant
+## 4. Transactions
 
 ```go
 // platform/tx
 type Runner interface {
-	// InTenantTx begins a transaction, runs set_config('app.tenant_id', tenantID, true),
-	// stores the pgx.Tx in ctx and commits if fn returns nil.
-	InTenantTx(ctx context.Context, fn func(ctx context.Context) error) error
+	// InTx begins a transaction, stores the pgx.Tx in ctx, commits if fn returns nil
+	// and rolls back on error or panic.
+	InTx(ctx context.Context, fn func(ctx context.Context) error) error
 }
 
 // platform/postgres
-// Executor returns the transaction in ctx, or fails: business queries outside a tenant tx are a bug.
-func Executor(ctx context.Context) (DBTX, error)
+// Executor returns the transaction in ctx, or the pool when there is none.
+func Executor(ctx context.Context) DBTX
 ```
 
-- The **use case** decides the transaction boundary (`CompleteSale` wraps allocation + credit + save + audit + outbox in one `InTenantTx`).
-- Repositories never call `pool.Exec` directly for tenant data; they use `postgres.Executor(ctx)`. A repository called outside a transaction returns `ErrNoTenantTx` instead of silently running without RLS context (which would return zero rows and hide the bug).
-- The tenant id comes from the **session**, never from the request body or a header the client controls.
-- Read-only use cases also run in a tenant transaction (`BEGIN READ ONLY`). The overhead is one round trip, and it keeps RLS as the single rule.
+- The **use case** decides the transaction boundary (`CompleteSale` wraps allocation + credit + save + audit + outbox in one `InTx`).
+- Repositories never hold the pool themselves; they use `postgres.Executor(ctx)`, so the same repository works inside or outside a transaction.
+- A use case that changes more than one row or aggregate, or writes audit/outbox records, must run in `InTx`. A single read can run without one.
+- The acting user comes from the **session**, never from the request body or a header the client controls.
 
-**Why the transaction travels in the context:** cross-context use cases need several repositories (from different packages) to share one transaction. Passing `pgx.Tx` through every signature would leak pgx into `application`. The trade-off: it is implicit, so the `Executor` failure above makes misuse loud.
+**Why the transaction travels in the context:** cross-context use cases need several repositories (from different packages) to share one transaction. Passing `pgx.Tx` through every signature would leak pgx into `application`. The trade-off: it is implicit, so use case tests assert that multi-write flows run inside the fake runner.
 
 ## 5. Errors and HTTP
 
@@ -150,7 +149,7 @@ The existing envelope (spec 002) is kept: `{"error": {"code": "...", "message": 
 | Validation of input shape | 400 | `invalid_request` |
 | No session / expired | 401 | `unauthenticated` |
 | Missing permission | 403 | `forbidden` |
-| Entity not found **in this tenant** | 404 | `product_not_found` (also for another tenant's id: never reveal existence) |
+| Entity not found | 404 | `product_not_found` |
 | Stale `version` | 409 | `version_conflict` |
 | Idempotency key reused with a different body | 409 | `idempotency_key_mismatch` |
 | Business rule | 422 | `insufficient_stock`, `discount_requires_approval`, `below_floor_price`, `credit_limit_exceeded`, `customer_has_overdue_installments` |
@@ -163,8 +162,7 @@ Messages for the clerk never contain costs: `below_floor_price` says "Desconto a
 |---|---|---|
 | Domain unit (TDD first) | Aggregates, value objects, calculators (FEFO pick, discount policy, Simples rate, markup/margin) | stdlib `testing`, table tests |
 | Use case | Orchestration, ports called in the right order, events emitted, audit written | `memory` repos + fakes for ports |
-| Integration | SQL, constraints, RLS, row locks, concurrent sales | real Postgres 18 (existing `postgres-test` compose service; testcontainers is an option for CI isolation) |
-| Tenant isolation | RLS guard query; "tenant B cannot read/update/reference tenant A rows" for each repository | integration suite with two tenants fixture |
+| Integration | SQL, constraints, row locks, concurrent sales | real Postgres 18 (existing `postgres-test` compose service; testcontainers is an option for CI isolation) |
 | Concurrency | Two goroutines selling the last unit: exactly one succeeds | integration, `sync.WaitGroup` + barrier |
 | E2E API | Main flows through HTTP with a real session | existing `test/e2e` |
 | Contract (Phase 2) | Gateway/emitter adapters against recorded responses | `httptest.Server` |
@@ -172,7 +170,7 @@ Messages for the clerk never contain costs: `below_floor_price` says "Desconto a
 ## 7. What changes in the existing code (first specs)
 
 1. Rename `internal/user` → `internal/identity` (package names `identity`, `identityapp`, `identitypg`, ...).
-2. Add `tenancy` and memberships; move `role` from `users` to `memberships` (expand → migrate data → contract).
-3. Add `platform/tx`, `platform/auth`, `platform/tenant`; make every existing repository use `Executor(ctx)`.
+2. Add the `business` context (singleton profile, locations, counters) and the setup command; replace `users.role` with `users.role_id` (expand → migrate data → contract).
+3. Add `platform/tx` and `platform/auth`; make every existing repository use `Executor(ctx)`.
 4. Replace the `owner`/`clerk` role check with permissions.
-5. Add the `depguard` rules and the RLS guard test before the second business context lands.
+5. Add the `depguard` rules before the second business context lands.
