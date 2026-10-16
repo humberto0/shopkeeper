@@ -1,8 +1,10 @@
 # 0003 — Use global user identity with tenant memberships and permission-based RBAC
 
-- **Status:** Proposed
+- **Status:** Superseded by [0011](0011-use-one-deployment-and-database-per-client.md)
 - **Date:** 2026-10-16
 - **Deciders:** Humberto
+
+> Superseded by [ADR 0011](0011-use-one-deployment-and-database-per-client.md): Shopkeeper is deployed once per client with its own database, so there is no multi-tenancy. Kept as history.
 
 ## Context
 Today `users` has a fixed `role` (`owner`/`clerk`) and no tenant. The SaaS needs: the same person in several tenants (owner of two stores, an accountant), roles configurable per tenant, and fine-grained rules (the clerk sells but never sees cost; discount ceiling per role).
