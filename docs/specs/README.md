@@ -1,6 +1,6 @@
 # Specs board
 
-**Progress:** 6/10 done · 0 in progress · 4 in backlog
+**Progress:** 7/10 done · 0 in progress · 3 in backlog
 **Last updated:** 2026-10-16
 
 Source of the backlog: the "known pending items in shopkeeper" list from the `backend-go` skill.
@@ -13,7 +13,7 @@ Source of the backlog: the "known pending items in shopkeeper" list from the `ba
 | 004 | [Canonical DATABASE_URL config](archive/004-canonical-database-url-config.md) | ✅ Done | backend-core, backend-go, devops-core | 001 | 002, 003, 006 | 2026-10-11 | 2026-10-11 |
 | 005 | [Makefile canonical targets](archive/005-makefile-canonical-targets.md) | ✅ Done | backend-core, backend-go, devops-core | 001 | 002, 003, 006 | 2026-10-11 | 2026-10-11 |
 | 006 | [Check constraint naming](archive/006-check-constraint-naming.md) | ✅ Done | backend-core, backend-go, db-core | — | 002, 003, 004, 005 | 2026-10-11 | 2026-10-11 |
-| 007 | [ADR 0011: one deployment and database per client](backlog/007-single-tenant-adr.md) | ⏳ Backlog | arch-core | — | — | — | — |
+| 007 | [ADR 0011: one deployment and database per client](archive/007-single-tenant-adr.md) | ✅ Done | arch-core | — | — | 2026-10-16 | 2026-10-16 |
 | 008 | [Data model without tenants](backlog/008-single-tenant-data-model.md) | ⏳ Backlog | db-core, arch-core | 007 | 009 | — | — |
 | 009 | [Architecture, scope and stories without tenants](backlog/009-single-tenant-architecture-docs.md) | ⏳ Backlog | arch-core, analyst-core | 007 | 008 | — | — |
 | 010 | [GitHub issues #19–#71 without tenants](backlog/010-single-tenant-github-issues.md) | ⏳ Backlog | git-core | 007, 008, 009 | — | — | — |
