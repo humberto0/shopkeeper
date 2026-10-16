@@ -1,21 +1,21 @@
-package userapp
+package identityapp
 
 import (
 	"context"
 	"time"
 
-	user "github.com/humberto0/shopkeeper/internal/user/domain"
+	identity "github.com/humberto0/shopkeeper/internal/identity/domain"
 )
 
 type findUserRepository interface {
-	FindByID(ctx context.Context, id string) (*user.User, error)
+	FindByID(ctx context.Context, id string) (*identity.User, error)
 }
 
 type FindUserByIDResult struct {
 	ID        string
 	Name      string
 	Email     string
-	Role      user.Role
+	Role      identity.Role
 	IsActive  bool
 	Version   int
 	CreatedAt time.Time
@@ -31,7 +31,7 @@ func NewFindUserByID(repo findUserRepository) *FindUserByID {
 }
 
 func (uc *FindUserByID) Execute(ctx context.Context, id string) (*FindUserByIDResult, error) {
-	if err := user.ValidateUserID(id); err != nil {
+	if err := identity.ValidateUserID(id); err != nil {
 		return nil, err
 	}
 

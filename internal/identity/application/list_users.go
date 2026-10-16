@@ -1,16 +1,16 @@
-package userapp
+package identityapp
 
 import (
 	"context"
 	"fmt"
 	"time"
 
+	identity "github.com/humberto0/shopkeeper/internal/identity/domain"
 	"github.com/humberto0/shopkeeper/internal/platform/pagination"
-	user "github.com/humberto0/shopkeeper/internal/user/domain"
 )
 
 type listUsersRepository interface {
-	List(ctx context.Context, limit, offset int) ([]*user.User, int, error)
+	List(ctx context.Context, limit, offset int) ([]*identity.User, int, error)
 }
 
 type ListUsersInput struct {
@@ -24,7 +24,7 @@ type ListUsersItem struct {
 	ID        string
 	Name      string
 	Email     string
-	Role      user.Role
+	Role      identity.Role
 	IsActive  bool
 	Version   int
 	CreatedAt time.Time

@@ -9,14 +9,14 @@ import (
 
 	"uuid"
 
-	user "github.com/humberto0/shopkeeper/internal/user/domain"
-	userpg "github.com/humberto0/shopkeeper/internal/user/postgres"
+	identity "github.com/humberto0/shopkeeper/internal/identity/domain"
+	identitypg "github.com/humberto0/shopkeeper/internal/identity/postgres"
 )
 
-func newTestUser(t *testing.T, email string) *user.User {
+func newTestUser(t *testing.T, email string) *identity.User {
 	t.Helper()
 
-	u, err := user.New("Humberto", email, "test1234", user.RoleOwner)
+	u, err := identity.New("Humberto", email, "test1234", identity.RoleOwner)
 	if err != nil {
 		t.Fatalf("failed to build user: %v", err)
 	}
@@ -27,7 +27,7 @@ func TestUserRepository_SaveAndFindByID(t *testing.T) {
 	truncateUsers(t)
 
 	ctx := context.Background()
-	repo := userpg.NewUserRepository(testPool)
+	repo := identitypg.NewUserRepository(testPool)
 
 	created := newTestUser(t, "humberto@shop.com")
 
@@ -76,11 +76,11 @@ func TestUserRepository_FindByID_NotFound(t *testing.T) {
 	truncateUsers(t)
 
 	ctx := context.Background()
-	repo := userpg.NewUserRepository(testPool)
+	repo := identitypg.NewUserRepository(testPool)
 
 	_, err := repo.FindByID(ctx, "00000000-0000-0000-0000-000000000000")
-	if !errors.Is(err, user.ErrNotFound) {
-		t.Fatalf("expected %v, got %v", user.ErrNotFound, err)
+	if !errors.Is(err, identity.ErrNotFound) {
+		t.Fatalf("expected %v, got %v", identity.ErrNotFound, err)
 	}
 }
 
@@ -88,7 +88,7 @@ func TestUserRepository_FindByEmail(t *testing.T) {
 	truncateUsers(t)
 
 	ctx := context.Background()
-	repo := userpg.NewUserRepository(testPool)
+	repo := identitypg.NewUserRepository(testPool)
 
 	created := newTestUser(t, "humberto@shop.com")
 	if err := repo.Save(ctx, created); err != nil {
@@ -108,11 +108,11 @@ func TestUserRepository_FindByEmail_NotFound(t *testing.T) {
 	truncateUsers(t)
 
 	ctx := context.Background()
-	repo := userpg.NewUserRepository(testPool)
+	repo := identitypg.NewUserRepository(testPool)
 
 	_, err := repo.FindByEmail(ctx, "nobody@shop.com")
-	if !errors.Is(err, user.ErrNotFound) {
-		t.Fatalf("expected %v, got %v", user.ErrNotFound, err)
+	if !errors.Is(err, identity.ErrNotFound) {
+		t.Fatalf("expected %v, got %v", identity.ErrNotFound, err)
 	}
 }
 
@@ -120,7 +120,7 @@ func TestUserRepository_DuplicateEmail(t *testing.T) {
 	truncateUsers(t)
 
 	ctx := context.Background()
-	repo := userpg.NewUserRepository(testPool)
+	repo := identitypg.NewUserRepository(testPool)
 
 	first := newTestUser(t, "humberto@shop.com")
 	if err := repo.Save(ctx, first); err != nil {
@@ -130,7 +130,7 @@ func TestUserRepository_DuplicateEmail(t *testing.T) {
 	second := newTestUser(t, "humberto@shop.com")
 	err := repo.Save(ctx, second)
 
-	if !errors.Is(err, user.ErrEmailAlreadyExists) {
+	if !errors.Is(err, identity.ErrEmailAlreadyExists) {
 		t.Fatalf("expected email already exists, got %v", err)
 	}
 }
@@ -139,7 +139,7 @@ func TestUserRepository_DuplicateEmailIgnoreCase(t *testing.T) {
 	truncateUsers(t)
 
 	ctx := context.Background()
-	repo := userpg.NewUserRepository(testPool)
+	repo := identitypg.NewUserRepository(testPool)
 
 	first := newTestUser(t, "humberto@shop.com")
 	if err := repo.Save(ctx, first); err != nil {
@@ -149,7 +149,7 @@ func TestUserRepository_DuplicateEmailIgnoreCase(t *testing.T) {
 	second := newTestUser(t, "HUMBERTO@SHOP.COM")
 	err := repo.Save(ctx, second)
 
-	if !errors.Is(err, user.ErrEmailAlreadyExists) {
+	if !errors.Is(err, identity.ErrEmailAlreadyExists) {
 		t.Fatalf("expected email already exists, got %v", err)
 	}
 }
@@ -158,7 +158,7 @@ func TestUserRepository_Update(t *testing.T) {
 	truncateUsers(t)
 
 	ctx := context.Background()
-	repo := userpg.NewUserRepository(testPool)
+	repo := identitypg.NewUserRepository(testPool)
 
 	created := newTestUser(t, "humberto@shop.com")
 	if err := repo.Save(ctx, created); err != nil {
@@ -201,7 +201,7 @@ func TestUserRepository_UpdateAllFields(t *testing.T) {
 	truncateUsers(t)
 
 	ctx := context.Background()
-	repo := userpg.NewUserRepository(testPool)
+	repo := identitypg.NewUserRepository(testPool)
 
 	created := newTestUser(t, "humberto@shop.com")
 	if err := repo.Save(ctx, created); err != nil {
@@ -214,7 +214,7 @@ func TestUserRepository_UpdateAllFields(t *testing.T) {
 	if err := created.ChangePassword("newpassword1"); err != nil {
 		t.Fatalf("expected no error changing password: %v", err)
 	}
-	if err := created.ChangeRole(user.RoleClerk); err != nil {
+	if err := created.ChangeRole(identity.RoleClerk); err != nil {
 		t.Fatalf("expected no error changing role: %v", err)
 	}
 
@@ -236,8 +236,8 @@ func TestUserRepository_UpdateAllFields(t *testing.T) {
 	if err := found.Authenticate("newpassword1"); err != nil {
 		t.Errorf("expected authentication with the new password to succeed, got %v", err)
 	}
-	if found.Role() != user.RoleClerk {
-		t.Errorf("expected role %q, got %q", user.RoleClerk, found.Role())
+	if found.Role() != identity.RoleClerk {
+		t.Errorf("expected role %q, got %q", identity.RoleClerk, found.Role())
 	}
 }
 
@@ -245,7 +245,7 @@ func TestUserRepository_UpdateDuplicateEmail(t *testing.T) {
 	truncateUsers(t)
 
 	ctx := context.Background()
-	repo := userpg.NewUserRepository(testPool)
+	repo := identitypg.NewUserRepository(testPool)
 
 	taken := newTestUser(t, "taken@shop.com")
 	if err := repo.Save(ctx, taken); err != nil {
@@ -262,8 +262,8 @@ func TestUserRepository_UpdateDuplicateEmail(t *testing.T) {
 	}
 
 	err := repo.Update(ctx, other)
-	if !errors.Is(err, user.ErrEmailAlreadyExists) {
-		t.Fatalf("expected %v, got %v", user.ErrEmailAlreadyExists, err)
+	if !errors.Is(err, identity.ErrEmailAlreadyExists) {
+		t.Fatalf("expected %v, got %v", identity.ErrEmailAlreadyExists, err)
 	}
 }
 
@@ -271,7 +271,7 @@ func TestUserRepository_UpdateVersionConflict(t *testing.T) {
 	truncateUsers(t)
 
 	ctx := context.Background()
-	repo := userpg.NewUserRepository(testPool)
+	repo := identitypg.NewUserRepository(testPool)
 
 	created := newTestUser(t, "humberto@shop.com")
 	if err := repo.Save(ctx, created); err != nil {
@@ -294,28 +294,28 @@ func TestUserRepository_UpdateVersionConflict(t *testing.T) {
 		t.Fatalf("expected no error renaming user: %v", err)
 	}
 	err = repo.Update(ctx, stale)
-	if !errors.Is(err, user.ErrConflict) {
-		t.Fatalf("expected %v, got %v", user.ErrConflict, err)
+	if !errors.Is(err, identity.ErrConflict) {
+		t.Fatalf("expected %v, got %v", identity.ErrConflict, err)
 	}
 }
 
 func TestUserRepository_UpdateNotFound(t *testing.T) {
 	truncateUsers(t)
 	ctx := context.Background()
-	repo := userpg.NewUserRepository(testPool)
+	repo := identitypg.NewUserRepository(testPool)
 
 	orphan := newTestUser(t, "orphan@shop.com")
 
 	err := repo.Update(ctx, orphan)
-	if !errors.Is(err, user.ErrNotFound) {
-		t.Fatalf("expected %v, got %v", user.ErrNotFound, err)
+	if !errors.Is(err, identity.ErrNotFound) {
+		t.Fatalf("expected %v, got %v", identity.ErrNotFound, err)
 	}
 }
 
 func TestUserRepository_ExistsByEmail(t *testing.T) {
 	truncateUsers(t)
 	ctx := context.Background()
-	repo := userpg.NewUserRepository(testPool)
+	repo := identitypg.NewUserRepository(testPool)
 
 	if err := repo.Save(ctx, newTestUser(t, "humberto@shop.com")); err != nil {
 		t.Fatalf("expected no error saving user: %v", err)
@@ -346,19 +346,19 @@ func TestUserRepository_ExistsByEmail(t *testing.T) {
 
 // saveUsersCreatedAt stores n users created one minute apart (index 0 is the
 // oldest) and returns their ids in creation order.
-func saveUsersCreatedAt(t *testing.T, repo *userpg.UserRepository, n int) []string {
+func saveUsersCreatedAt(t *testing.T, repo *identitypg.UserRepository, n int) []string {
 	t.Helper()
 
 	base := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
 	ids := make([]string, 0, n)
 	for i := range n {
 		createdAt := base.Add(time.Duration(i) * time.Minute)
-		u := user.Restore(
+		u := identity.Restore(
 			uuid.NewV7().String(),
 			fmt.Sprintf("User %d", i),
 			fmt.Sprintf("user%d@shop.com", i),
 			"hash",
-			user.RoleClerk,
+			identity.RoleClerk,
 			true,
 			1,
 			createdAt,
@@ -376,7 +376,7 @@ func TestUserRepository_List(t *testing.T) {
 	truncateUsers(t)
 
 	ctx := context.Background()
-	repo := userpg.NewUserRepository(testPool)
+	repo := identitypg.NewUserRepository(testPool)
 	ids := saveUsersCreatedAt(t, repo, 5)
 
 	tests := []struct {
@@ -418,7 +418,7 @@ func TestUserRepository_List_RestoresAllFields(t *testing.T) {
 	truncateUsers(t)
 
 	ctx := context.Background()
-	repo := userpg.NewUserRepository(testPool)
+	repo := identitypg.NewUserRepository(testPool)
 
 	created := newTestUser(t, "humberto@shop.com")
 	if err := repo.Save(ctx, created); err != nil {
@@ -446,7 +446,7 @@ func TestUserRepository_List_RestoresAllFields(t *testing.T) {
 func TestUserRepository_List_Empty(t *testing.T) {
 	truncateUsers(t)
 
-	got, total, err := userpg.NewUserRepository(testPool).List(context.Background(), 20, 0)
+	got, total, err := identitypg.NewUserRepository(testPool).List(context.Background(), 20, 0)
 	if err != nil {
 		t.Fatalf("failed to list users: %v", err)
 	}

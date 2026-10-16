@@ -7,10 +7,10 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	identityapp "github.com/humberto0/shopkeeper/internal/identity/application"
+	identityhttp "github.com/humberto0/shopkeeper/internal/identity/http"
+	identitypg "github.com/humberto0/shopkeeper/internal/identity/postgres"
 	platformhttp "github.com/humberto0/shopkeeper/internal/platform/http"
-	userapp "github.com/humberto0/shopkeeper/internal/user/application"
-	userhttp "github.com/humberto0/shopkeeper/internal/user/http"
-	userpg "github.com/humberto0/shopkeeper/internal/user/postgres"
 	"github.com/humberto0/shopkeeper/test/testutil"
 )
 
@@ -24,12 +24,12 @@ func TestMain(m *testing.M) {
 
 	mux := http.NewServeMux()
 
-	userRepo := userpg.NewUserRepository(testPool)
-	userhttp.NewUserHandler(
-		userapp.NewRegisterUser(userRepo),
-		userapp.NewFindUserByID(userRepo),
-		userapp.NewEditUser(userRepo),
-		userapp.NewListUsers(userRepo),
+	userRepo := identitypg.NewUserRepository(testPool)
+	identityhttp.NewUserHandler(
+		identityapp.NewRegisterUser(userRepo),
+		identityapp.NewFindUserByID(userRepo),
+		identityapp.NewEditUser(userRepo),
+		identityapp.NewListUsers(userRepo),
 	).Register(mux)
 	router = platformhttp.NewRouter(mux, platformhttp.NewHealthHandler(testPool), []string{"*"})
 

@@ -1,16 +1,16 @@
-package userapp
+package identityapp
 
 import (
 	"context"
 	"fmt"
 	"strings"
 
-	user "github.com/humberto0/shopkeeper/internal/user/domain"
+	identity "github.com/humberto0/shopkeeper/internal/identity/domain"
 )
 
 type editUserRepository interface {
-	FindByID(ctx context.Context, id string) (*user.User, error)
-	Update(ctx context.Context, u *user.User) error
+	FindByID(ctx context.Context, id string) (*identity.User, error)
+	Update(ctx context.Context, u *identity.User) error
 	ExistsByEmail(ctx context.Context, email string) (bool, error)
 }
 
@@ -18,7 +18,7 @@ type EditUserInput struct {
 	ID      string
 	Name    string
 	Email   string
-	Role    user.Role
+	Role    identity.Role
 	Version int
 }
 
@@ -26,7 +26,7 @@ type EditUserOutput struct {
 	ID      string
 	Name    string
 	Email   string
-	Role    user.Role
+	Role    identity.Role
 	Version int
 }
 
@@ -39,7 +39,7 @@ func NewEditUser(repo editUserRepository) *EditUser {
 }
 
 func (e *EditUser) Execute(ctx context.Context, in EditUserInput) (*EditUserOutput, error) {
-	if err := user.ValidateUserID(in.ID); err != nil {
+	if err := identity.ValidateUserID(in.ID); err != nil {
 		return nil, err
 	}
 
@@ -49,7 +49,7 @@ func (e *EditUser) Execute(ctx context.Context, in EditUserInput) (*EditUserOutp
 	}
 
 	if u.Version() != in.Version {
-		return nil, user.ErrConflict
+		return nil, identity.ErrConflict
 	}
 
 	if !strings.EqualFold(u.Email(), in.Email) {
@@ -58,7 +58,7 @@ func (e *EditUser) Execute(ctx context.Context, in EditUserInput) (*EditUserOutp
 			return nil, fmt.Errorf("checking if email exists: %w", err)
 		}
 		if exists {
-			return nil, user.ErrEmailAlreadyExists
+			return nil, identity.ErrEmailAlreadyExists
 		}
 		if err := u.ChangeEmail(in.Email); err != nil {
 			return nil, err

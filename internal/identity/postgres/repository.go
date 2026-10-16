@@ -1,4 +1,4 @@
-package userpg
+package identitypg
 
 import (
 	"context"
@@ -10,10 +10,10 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	user "github.com/humberto0/shopkeeper/internal/user/domain"
+	identity "github.com/humberto0/shopkeeper/internal/identity/domain"
 )
 
-var _ user.Repository = (*UserRepository)(nil)
+var _ identity.Repository = (*UserRepository)(nil)
 
 const uniqueViolationCode = "23505"
 
@@ -31,7 +31,7 @@ const insertUserQuery = `
 	INSERT INTO users (id, name, email, password_hash, role, is_active, created_at, updated_at)
 	VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`
 
-func (r *UserRepository) Save(ctx context.Context, u *user.User) error {
+func (r *UserRepository) Save(ctx context.Context, u *identity.User) error {
 	_, err := r.pool.Exec(ctx, insertUserQuery,
 		u.ID(),
 		u.Name(),
@@ -44,7 +44,7 @@ func (r *UserRepository) Save(ctx context.Context, u *user.User) error {
 	)
 	if err != nil {
 		if isUniqueViolation(err, emailUniqueIndex) {
-			return user.ErrEmailAlreadyExists
+			return identity.ErrEmailAlreadyExists
 		}
 		return fmt.Errorf("inserting user: %w", err)
 	}
@@ -58,7 +58,7 @@ const updateUserQuery = `
 
 const existsByIDQuery = `SELECT EXISTS (SELECT 1 FROM users WHERE id = $1)`
 
-func (r *UserRepository) Update(ctx context.Context, u *user.User) error {
+func (r *UserRepository) Update(ctx context.Context, u *identity.User) error {
 	var newVersion int
 	err := r.pool.QueryRow(ctx, updateUserQuery,
 		u.ID(),
@@ -77,12 +77,12 @@ func (r *UserRepository) Update(ctx context.Context, u *user.User) error {
 				return fmt.Errorf("checking if user exists: %w", err)
 			}
 			if !exists {
-				return user.ErrNotFound
+				return identity.ErrNotFound
 			}
-			return user.ErrConflict
+			return identity.ErrConflict
 		}
 		if isUniqueViolation(err, emailUniqueIndex) {
-			return user.ErrEmailAlreadyExists
+			return identity.ErrEmailAlreadyExists
 		}
 		return fmt.Errorf("updating user: %w", err)
 	}
@@ -95,12 +95,12 @@ const findByIDQuery = `
 	SELECT id, name, email, password_hash, role, is_active, version, created_at, updated_at
 	FROM users WHERE id = $1`
 
-func (r *UserRepository) FindByID(ctx context.Context, id string) (*user.User, error) {
+func (r *UserRepository) FindByID(ctx context.Context, id string) (*identity.User, error) {
 	row := r.pool.QueryRow(ctx, findByIDQuery, id)
 	u, err := scanUser(row)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, user.ErrNotFound
+			return nil, identity.ErrNotFound
 		}
 		return nil, fmt.Errorf("finding user by id: %w", err)
 	}
@@ -111,12 +111,12 @@ const findByEmailQuery = `
 	SELECT id, name, email, password_hash, role, is_active, version, created_at, updated_at
 	FROM users WHERE lower(email) = lower($1)`
 
-func (r *UserRepository) FindByEmail(ctx context.Context, email string) (*user.User, error) {
+func (r *UserRepository) FindByEmail(ctx context.Context, email string) (*identity.User, error) {
 	row := r.pool.QueryRow(ctx, findByEmailQuery, email)
 	u, err := scanUser(row)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, user.ErrNotFound
+			return nil, identity.ErrNotFound
 		}
 		return nil, fmt.Errorf("finding user by email: %w", err)
 	}
@@ -144,7 +144,7 @@ const listUsersQuery = `
 	ORDER BY created_at DESC, id DESC
 	LIMIT $1 OFFSET $2`
 
-func (r *UserRepository) List(ctx context.Context, limit, offset int) ([]*user.User, int, error) {
+func (r *UserRepository) List(ctx context.Context, limit, offset int) ([]*identity.User, int, error) {
 	var total int
 	if err := r.pool.QueryRow(ctx, countUsersQuery).Scan(&total); err != nil {
 		return nil, 0, fmt.Errorf("counting users: %w", err)
@@ -156,7 +156,7 @@ func (r *UserRepository) List(ctx context.Context, limit, offset int) ([]*user.U
 	}
 	defer rows.Close()
 
-	users := make([]*user.User, 0, limit)
+	users := make([]*identity.User, 0, limit)
 	for rows.Next() {
 		u, err := scanUser(rows)
 		if err != nil {
@@ -171,7 +171,7 @@ func (r *UserRepository) List(ctx context.Context, limit, offset int) ([]*user.U
 	return users, total, nil
 }
 
-func scanUser(row pgx.Row) (*user.User, error) {
+func scanUser(row pgx.Row) (*identity.User, error) {
 	var (
 		id, name, email, passwordHash, role string
 		isActive                            bool
@@ -181,7 +181,7 @@ func scanUser(row pgx.Row) (*user.User, error) {
 	if err := row.Scan(&id, &name, &email, &passwordHash, &role, &isActive, &version, &createdAt, &updatedAt); err != nil {
 		return nil, err
 	}
-	return user.Restore(id, name, email, passwordHash, user.Role(role), isActive, version, createdAt, updatedAt), nil
+	return identity.Restore(id, name, email, passwordHash, identity.Role(role), isActive, version, createdAt, updatedAt), nil
 }
 
 func isUniqueViolation(err error, constraint string) bool {

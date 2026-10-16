@@ -1,4 +1,4 @@
-package usermem
+package identitymem
 
 import (
 	"cmp"
@@ -7,30 +7,30 @@ import (
 	"strings"
 	"sync"
 
-	user "github.com/humberto0/shopkeeper/internal/user/domain"
+	identity "github.com/humberto0/shopkeeper/internal/identity/domain"
 )
 
-var _ user.Repository = (*UserRepository)(nil)
+var _ identity.Repository = (*UserRepository)(nil)
 
 type UserRepository struct {
 	mu      sync.RWMutex
-	byID    map[string]*user.User
+	byID    map[string]*identity.User
 	byEmail map[string]string // normalized email → id
 }
 
 func NewUserRepository() *UserRepository {
 	return &UserRepository{
-		byID:    make(map[string]*user.User),
+		byID:    make(map[string]*identity.User),
 		byEmail: make(map[string]string),
 	}
 }
 
-func (r *UserRepository) Save(ctx context.Context, u *user.User) error {
+func (r *UserRepository) Save(ctx context.Context, u *identity.User) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
 	if _, exists := r.byEmail[u.Email()]; exists {
-		return user.ErrEmailAlreadyExists
+		return identity.ErrEmailAlreadyExists
 	}
 
 	r.byID[u.ID()] = clone(u)
@@ -38,22 +38,22 @@ func (r *UserRepository) Save(ctx context.Context, u *user.User) error {
 	return nil
 }
 
-func (r *UserRepository) Update(ctx context.Context, u *user.User) error {
+func (r *UserRepository) Update(ctx context.Context, u *identity.User) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
 	existing, ok := r.byID[u.ID()]
 	if !ok {
-		return user.ErrNotFound
+		return identity.ErrNotFound
 	}
 
 	if existing.Version() != u.Version() {
-		return user.ErrConflict
+		return identity.ErrConflict
 	}
 
 	if existing.Email() != u.Email() {
 		if _, taken := r.byEmail[u.Email()]; taken {
-			return user.ErrEmailAlreadyExists
+			return identity.ErrEmailAlreadyExists
 		}
 		delete(r.byEmail, existing.Email())
 		r.byEmail[u.Email()] = u.ID()
@@ -64,24 +64,24 @@ func (r *UserRepository) Update(ctx context.Context, u *user.User) error {
 	return nil
 }
 
-func (r *UserRepository) FindByID(ctx context.Context, id string) (*user.User, error) {
+func (r *UserRepository) FindByID(ctx context.Context, id string) (*identity.User, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
 	u, ok := r.byID[id]
 	if !ok {
-		return nil, user.ErrNotFound
+		return nil, identity.ErrNotFound
 	}
 	return clone(u), nil
 }
 
-func (r *UserRepository) FindByEmail(ctx context.Context, email string) (*user.User, error) {
+func (r *UserRepository) FindByEmail(ctx context.Context, email string) (*identity.User, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
 	id, ok := r.byEmail[normalizeEmail(email)]
 	if !ok {
-		return nil, user.ErrNotFound
+		return nil, identity.ErrNotFound
 	}
 	return clone(r.byID[id]), nil
 }
@@ -96,15 +96,15 @@ func (r *UserRepository) ExistsByEmail(ctx context.Context, email string) (bool,
 
 // List mirrors the Postgres ordering (created_at DESC, id DESC) so use case
 // tests see the same pages they would against the real database.
-func (r *UserRepository) List(ctx context.Context, limit, offset int) ([]*user.User, int, error) {
+func (r *UserRepository) List(ctx context.Context, limit, offset int) ([]*identity.User, int, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
-	all := make([]*user.User, 0, len(r.byID))
+	all := make([]*identity.User, 0, len(r.byID))
 	for _, u := range r.byID {
 		all = append(all, u)
 	}
-	slices.SortFunc(all, func(a, b *user.User) int {
+	slices.SortFunc(all, func(a, b *identity.User) int {
 		if c := b.CreatedAt().Compare(a.CreatedAt()); c != 0 {
 			return c
 		}
@@ -113,11 +113,11 @@ func (r *UserRepository) List(ctx context.Context, limit, offset int) ([]*user.U
 
 	total := len(all)
 	if offset >= total {
-		return []*user.User{}, total, nil
+		return []*identity.User{}, total, nil
 	}
 	end := min(offset+limit, total)
 
-	page := make([]*user.User, 0, end-offset)
+	page := make([]*identity.User, 0, end-offset)
 	for _, u := range all[offset:end] {
 		page = append(page, clone(u))
 	}
@@ -128,7 +128,7 @@ func (r *UserRepository) Reset() {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	r.byID = make(map[string]*user.User)
+	r.byID = make(map[string]*identity.User)
 	r.byEmail = make(map[string]string)
 }
 
@@ -140,8 +140,8 @@ func (r *UserRepository) Count() int {
 
 // clone copies a user so callers never share the stored pointer: changes
 // only reach the repository through Save or Update, as with Postgres.
-func clone(u *user.User) *user.User {
-	return user.Restore(
+func clone(u *identity.User) *identity.User {
+	return identity.Restore(
 		u.ID(), u.Name(), u.Email(), u.PasswordHash(),
 		u.Role(), u.IsActive(), u.Version(),
 		u.CreatedAt(), u.UpdatedAt(),

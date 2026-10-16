@@ -1,12 +1,12 @@
-package userapp
+package identityapp
 
 import (
 	"context"
 	"errors"
 	"testing"
 
-	user "github.com/humberto0/shopkeeper/internal/user/domain"
-	usermem "github.com/humberto0/shopkeeper/internal/user/memory"
+	identity "github.com/humberto0/shopkeeper/internal/identity/domain"
+	identitymem "github.com/humberto0/shopkeeper/internal/identity/memory"
 )
 
 func validEditUserInput(id string, email string, version int) EditUserInput {
@@ -14,17 +14,17 @@ func validEditUserInput(id string, email string, version int) EditUserInput {
 		ID:      id,
 		Name:    "humbertinho",
 		Email:   email,
-		Role:    user.RoleClerk,
+		Role:    identity.RoleClerk,
 		Version: version,
 	}
 }
 
 func TestEditUser_Success(t *testing.T) {
 	ctx := context.Background()
-	repo := usermem.NewUserRepository()
+	repo := identitymem.NewUserRepository()
 	ed := NewEditUser(repo)
 
-	created, err := user.New("humberto", "humberto@shop.com", "test1234", user.RoleOwner)
+	created, err := identity.New("humberto", "humberto@shop.com", "test1234", identity.RoleOwner)
 	if err != nil {
 		t.Fatalf("creating user: %v", err)
 	}
@@ -55,10 +55,10 @@ func TestEditUser_Success(t *testing.T) {
 
 func TestEditUser_ConsecutiveEditsUseReturnedVersion(t *testing.T) {
 	ctx := context.Background()
-	repo := usermem.NewUserRepository()
+	repo := identitymem.NewUserRepository()
 	ed := NewEditUser(repo)
 
-	created, err := user.New("humberto", "humberto@shop.com", "test1234", user.RoleOwner)
+	created, err := identity.New("humberto", "humberto@shop.com", "test1234", identity.RoleOwner)
 	if err != nil {
 		t.Fatalf("creating user: %v", err)
 	}
@@ -82,8 +82,8 @@ func TestEditUser_ConsecutiveEditsUseReturnedVersion(t *testing.T) {
 	}
 
 	stale, err := ed.Execute(ctx, validEditUserInput(created.ID(), second.Email, originalVersion))
-	if !errors.Is(err, user.ErrConflict) {
-		t.Errorf("expected error %v reusing version %d, got %v", user.ErrConflict, originalVersion, err)
+	if !errors.Is(err, identity.ErrConflict) {
+		t.Errorf("expected error %v reusing version %d, got %v", identity.ErrConflict, originalVersion, err)
 	}
 	assertNilOutput(t, stale)
 
@@ -101,10 +101,10 @@ func TestEditUser_ConsecutiveEditsUseReturnedVersion(t *testing.T) {
 
 func TestEditUser_StaleVersionConflict(t *testing.T) {
 	ctx := context.Background()
-	repo := usermem.NewUserRepository()
+	repo := identitymem.NewUserRepository()
 	ed := NewEditUser(repo)
 
-	created, err := user.New("humberto", "humberto@shop.com", "test1234", user.RoleOwner)
+	created, err := identity.New("humberto", "humberto@shop.com", "test1234", identity.RoleOwner)
 	if err != nil {
 		t.Fatalf("creating user: %v", err)
 	}
@@ -114,42 +114,42 @@ func TestEditUser_StaleVersionConflict(t *testing.T) {
 
 	staleVersion := created.Version() - 1
 	edition, err := ed.Execute(ctx, validEditUserInput(created.ID(), created.Email(), staleVersion))
-	if !errors.Is(err, user.ErrConflict) {
-		t.Errorf("expected error %v, got %v", user.ErrConflict, err)
+	if !errors.Is(err, identity.ErrConflict) {
+		t.Errorf("expected error %v, got %v", identity.ErrConflict, err)
 	}
 	assertNilOutput(t, edition)
 }
 
 func TestEditUser_MalformedId(t *testing.T) {
 	ctx := context.Background()
-	repo := usermem.NewUserRepository()
+	repo := identitymem.NewUserRepository()
 	ed := NewEditUser(repo)
 
 	edition, err := ed.Execute(ctx, validEditUserInput("test", "humberto@shop.com", 0))
-	if !errors.Is(err, user.ErrInvalidID) {
-		t.Errorf("expected error %v, got %v", user.ErrInvalidID, err)
+	if !errors.Is(err, identity.ErrInvalidID) {
+		t.Errorf("expected error %v, got %v", identity.ErrInvalidID, err)
 	}
 	assertNilOutput(t, edition)
 }
 
 func TestEditUser_UserNotFound(t *testing.T) {
 	ctx := context.Background()
-	repo := usermem.NewUserRepository()
+	repo := identitymem.NewUserRepository()
 	ed := NewEditUser(repo)
 
 	edition, err := ed.Execute(ctx, validEditUserInput("3d0ca315-aff9-4fc2-be61-3b76b9a2d798", "humberto@shop.com", 0))
-	if !errors.Is(err, user.ErrNotFound) {
-		t.Errorf("expected error %v, got %v", user.ErrNotFound, err)
+	if !errors.Is(err, identity.ErrNotFound) {
+		t.Errorf("expected error %v, got %v", identity.ErrNotFound, err)
 	}
 	assertNilOutput(t, edition)
 }
 
 func TestEditUser_MalformedEmail(t *testing.T) {
 	ctx := context.Background()
-	repo := usermem.NewUserRepository()
+	repo := identitymem.NewUserRepository()
 	ed := NewEditUser(repo)
 
-	created, err := user.New("humberto", "humberto@shop.com", "test1234", user.RoleOwner)
+	created, err := identity.New("humberto", "humberto@shop.com", "test1234", identity.RoleOwner)
 	if err != nil {
 		t.Fatalf("creating user: %v", err)
 	}
@@ -158,8 +158,8 @@ func TestEditUser_MalformedEmail(t *testing.T) {
 	}
 
 	edition, err := ed.Execute(ctx, validEditUserInput(created.ID(), "humberto", created.Version()))
-	if !errors.Is(err, user.ErrInvalidEmail) {
-		t.Errorf("expected error %v, got %v", user.ErrInvalidEmail, err)
+	if !errors.Is(err, identity.ErrInvalidEmail) {
+		t.Errorf("expected error %v, got %v", identity.ErrInvalidEmail, err)
 	}
 	assertNilOutput(t, edition)
 }

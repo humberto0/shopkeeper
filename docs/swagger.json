@@ -97,7 +97,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/userhttp.listUsersResponse"
+                            "$ref": "#/definitions/identityhttp.listUsersResponse"
                         }
                     }
                 }
@@ -121,7 +121,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/userhttp.registerUserRequest"
+                            "$ref": "#/definitions/identityhttp.registerUserRequest"
                         }
                     }
                 ],
@@ -129,7 +129,7 @@
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/userhttp.registerUserResponse"
+                            "$ref": "#/definitions/identityhttp.registerUserResponse"
                         }
                     },
                     "400": {
@@ -176,7 +176,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/userhttp.findUserResponse"
+                            "$ref": "#/definitions/identityhttp.findUserResponse"
                         }
                     },
                     "400": {
@@ -219,7 +219,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/userhttp.editUserRequest"
+                            "$ref": "#/definitions/identityhttp.editUserRequest"
                         }
                     }
                 ],
@@ -227,7 +227,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/userhttp.editUserResponse"
+                            "$ref": "#/definitions/identityhttp.editUserResponse"
                         }
                     },
                     "400": {
@@ -259,33 +259,7 @@
         }
     },
     "definitions": {
-        "platformhttp.ErrorResponse": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "string",
-                    "example": "user.not_found"
-                },
-                "error": {
-                    "type": "string",
-                    "example": "user: not found"
-                },
-                "requestId": {
-                    "type": "string",
-                    "example": "0199d4a1-7c3e-7c3e-8b3e-7c3e7c3e7c3e"
-                }
-            }
-        },
-        "platformhttp.HealthResponse": {
-            "type": "object",
-            "properties": {
-                "status": {
-                    "type": "string",
-                    "example": "ok"
-                }
-            }
-        },
-        "userhttp.editUserRequest": {
+        "identityhttp.editUserRequest": {
             "type": "object",
             "properties": {
                 "email": {
@@ -306,7 +280,7 @@
                 }
             }
         },
-        "userhttp.editUserResponse": {
+        "identityhttp.editUserResponse": {
             "type": "object",
             "properties": {
                 "email": {
@@ -331,7 +305,7 @@
                 }
             }
         },
-        "userhttp.findUserResponse": {
+        "identityhttp.findUserResponse": {
             "type": "object",
             "properties": {
                 "createdAt": {
@@ -368,13 +342,13 @@
                 }
             }
         },
-        "userhttp.listUsersResponse": {
+        "identityhttp.listUsersResponse": {
             "type": "object",
             "properties": {
                 "items": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/userhttp.findUserResponse"
+                        "$ref": "#/definitions/identityhttp.findUserResponse"
                     }
                 },
                 "limit": {
@@ -395,7 +369,7 @@
                 }
             }
         },
-        "userhttp.registerUserRequest": {
+        "identityhttp.registerUserRequest": {
             "type": "object",
             "properties": {
                 "email": {
@@ -420,7 +394,7 @@
                 }
             }
         },
-        "userhttp.registerUserResponse": {
+        "identityhttp.registerUserResponse": {
             "type": "object",
             "properties": {
                 "email": {
@@ -438,6 +412,32 @@
                 "role": {
                     "type": "string",
                     "example": "owner"
+                }
+            }
+        },
+        "platformhttp.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "example": "user.not_found"
+                },
+                "error": {
+                    "type": "string",
+                    "example": "user: not found"
+                },
+                "requestId": {
+                    "type": "string",
+                    "example": "0199d4a1-7c3e-7c3e-8b3e-7c3e7c3e7c3e"
+                }
+            }
+        },
+        "platformhttp.HealthResponse": {
+            "type": "object",
+            "properties": {
+                "status": {
+                    "type": "string",
+                    "example": "ok"
                 }
             }
         }
