@@ -9,12 +9,12 @@ import (
 	"os/signal"
 	"syscall"
 
+	identityapp "github.com/humberto0/shopkeeper/internal/identity/application"
+	identityhttp "github.com/humberto0/shopkeeper/internal/identity/http"
+	identitypg "github.com/humberto0/shopkeeper/internal/identity/postgres"
 	"github.com/humberto0/shopkeeper/internal/platform/config"
 	platformhttp "github.com/humberto0/shopkeeper/internal/platform/http"
 	"github.com/humberto0/shopkeeper/internal/platform/postgres"
-	userapp "github.com/humberto0/shopkeeper/internal/user/application"
-	userhttp "github.com/humberto0/shopkeeper/internal/user/http"
-	userpg "github.com/humberto0/shopkeeper/internal/user/postgres"
 )
 
 // @title						shopkeeper API
@@ -67,12 +67,12 @@ func run() error {
 
 	mux := http.NewServeMux()
 
-	userRepo := userpg.NewUserRepository(pool)
-	registerUser := userapp.NewRegisterUser(userRepo)
-	findUserByID := userapp.NewFindUserByID(userRepo)
-	editUser := userapp.NewEditUser(userRepo)
-	listUsers := userapp.NewListUsers(userRepo)
-	userhttp.NewUserHandler(registerUser, findUserByID, editUser, listUsers).Register(mux)
+	userRepo := identitypg.NewUserRepository(pool)
+	registerUser := identityapp.NewRegisterUser(userRepo)
+	findUserByID := identityapp.NewFindUserByID(userRepo)
+	editUser := identityapp.NewEditUser(userRepo)
+	listUsers := identityapp.NewListUsers(userRepo)
+	identityhttp.NewUserHandler(registerUser, findUserByID, editUser, listUsers).Register(mux)
 
 	router := platformhttp.NewRouter(mux, platformhttp.NewHealthHandler(pool), cfg.CORS.AllowedOrigins)
 

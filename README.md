@@ -299,7 +299,7 @@ The raw OpenAPI spec is also available at `http://localhost:8080/swagger/doc.jso
 
 ### Regenerating the docs
 
-The Swagger spec lives in `docs/` and is generated from the `@...` comments above handler functions (see `cmd/api/main.go`, `internal/platform/http/health.go` and `internal/user/http/handler.go`). Whenever you add or change a route, update its annotations and regenerate:
+The Swagger spec lives in `docs/` and is generated from the `@...` comments above handler functions (see `cmd/api/main.go`, `internal/platform/http/health.go` and `internal/identity/http/handler.go`). Whenever you add or change a route, update its annotations and regenerate:
 
 ```bash
 make swag

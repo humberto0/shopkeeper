@@ -101,7 +101,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/userhttp.listUsersResponse"
+                            "$ref": "#/definitions/identityhttp.listUsersResponse"
                         }
                     }
                 }
@@ -125,7 +125,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/userhttp.registerUserRequest"
+                            "$ref": "#/definitions/identityhttp.registerUserRequest"
                         }
                     }
                 ],
@@ -133,7 +133,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/userhttp.registerUserResponse"
+                            "$ref": "#/definitions/identityhttp.registerUserResponse"
                         }
                     },
                     "400": {
@@ -180,7 +180,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/userhttp.findUserResponse"
+                            "$ref": "#/definitions/identityhttp.findUserResponse"
                         }
                     },
                     "400": {
@@ -223,7 +223,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/userhttp.editUserRequest"
+                            "$ref": "#/definitions/identityhttp.editUserRequest"
                         }
                     }
                 ],
@@ -231,7 +231,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/userhttp.editUserResponse"
+                            "$ref": "#/definitions/identityhttp.editUserResponse"
                         }
                     },
                     "400": {
@@ -263,33 +263,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "platformhttp.ErrorResponse": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "type": "string",
-                    "example": "user.not_found"
-                },
-                "error": {
-                    "type": "string",
-                    "example": "user: not found"
-                },
-                "requestId": {
-                    "type": "string",
-                    "example": "0199d4a1-7c3e-7c3e-8b3e-7c3e7c3e7c3e"
-                }
-            }
-        },
-        "platformhttp.HealthResponse": {
-            "type": "object",
-            "properties": {
-                "status": {
-                    "type": "string",
-                    "example": "ok"
-                }
-            }
-        },
-        "userhttp.editUserRequest": {
+        "identityhttp.editUserRequest": {
             "type": "object",
             "properties": {
                 "email": {
@@ -310,7 +284,7 @@ const docTemplate = `{
                 }
             }
         },
-        "userhttp.editUserResponse": {
+        "identityhttp.editUserResponse": {
             "type": "object",
             "properties": {
                 "email": {
@@ -335,7 +309,7 @@ const docTemplate = `{
                 }
             }
         },
-        "userhttp.findUserResponse": {
+        "identityhttp.findUserResponse": {
             "type": "object",
             "properties": {
                 "createdAt": {
@@ -372,13 +346,13 @@ const docTemplate = `{
                 }
             }
         },
-        "userhttp.listUsersResponse": {
+        "identityhttp.listUsersResponse": {
             "type": "object",
             "properties": {
                 "items": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/userhttp.findUserResponse"
+                        "$ref": "#/definitions/identityhttp.findUserResponse"
                     }
                 },
                 "limit": {
@@ -399,7 +373,7 @@ const docTemplate = `{
                 }
             }
         },
-        "userhttp.registerUserRequest": {
+        "identityhttp.registerUserRequest": {
             "type": "object",
             "properties": {
                 "email": {
@@ -424,7 +398,7 @@ const docTemplate = `{
                 }
             }
         },
-        "userhttp.registerUserResponse": {
+        "identityhttp.registerUserResponse": {
             "type": "object",
             "properties": {
                 "email": {
@@ -442,6 +416,32 @@ const docTemplate = `{
                 "role": {
                     "type": "string",
                     "example": "owner"
+                }
+            }
+        },
+        "platformhttp.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "example": "user.not_found"
+                },
+                "error": {
+                    "type": "string",
+                    "example": "user: not found"
+                },
+                "requestId": {
+                    "type": "string",
+                    "example": "0199d4a1-7c3e-7c3e-8b3e-7c3e7c3e7c3e"
+                }
+            }
+        },
+        "platformhttp.HealthResponse": {
+            "type": "object",
+            "properties": {
+                "status": {
+                    "type": "string",
+                    "example": "ok"
                 }
             }
         }

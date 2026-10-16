@@ -1,24 +1,6 @@
 basePath: /
 definitions:
-  platformhttp.ErrorResponse:
-    properties:
-      code:
-        example: user.not_found
-        type: string
-      error:
-        example: 'user: not found'
-        type: string
-      requestId:
-        example: 0199d4a1-7c3e-7c3e-8b3e-7c3e7c3e7c3e
-        type: string
-    type: object
-  platformhttp.HealthResponse:
-    properties:
-      status:
-        example: ok
-        type: string
-    type: object
-  userhttp.editUserRequest:
+  identityhttp.editUserRequest:
     properties:
       email:
         example: humberto@shop.com
@@ -33,7 +15,7 @@ definitions:
         example: 1
         type: integer
     type: object
-  userhttp.editUserResponse:
+  identityhttp.editUserResponse:
     properties:
       email:
         example: humberto@shop.com
@@ -51,7 +33,7 @@ definitions:
         example: 1
         type: integer
     type: object
-  userhttp.findUserResponse:
+  identityhttp.findUserResponse:
     properties:
       createdAt:
         example: "2020-01-01T00:00:00Z"
@@ -78,11 +60,11 @@ definitions:
         example: 1
         type: integer
     type: object
-  userhttp.listUsersResponse:
+  identityhttp.listUsersResponse:
     properties:
       items:
         items:
-          $ref: '#/definitions/userhttp.findUserResponse'
+          $ref: '#/definitions/identityhttp.findUserResponse'
         type: array
       limit:
         example: 20
@@ -97,7 +79,7 @@ definitions:
         example: 3
         type: integer
     type: object
-  userhttp.registerUserRequest:
+  identityhttp.registerUserRequest:
     properties:
       email:
         example: humbertotest@shop.com
@@ -115,7 +97,7 @@ definitions:
         example: owner
         type: string
     type: object
-  userhttp.registerUserResponse:
+  identityhttp.registerUserResponse:
     properties:
       email:
         example: humbertotest@shop.com
@@ -128,6 +110,24 @@ definitions:
         type: string
       role:
         example: owner
+        type: string
+    type: object
+  platformhttp.ErrorResponse:
+    properties:
+      code:
+        example: user.not_found
+        type: string
+      error:
+        example: 'user: not found'
+        type: string
+      requestId:
+        example: 0199d4a1-7c3e-7c3e-8b3e-7c3e7c3e7c3e
+        type: string
+    type: object
+  platformhttp.HealthResponse:
+    properties:
+      status:
+        example: ok
         type: string
     type: object
 info:
@@ -198,7 +198,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/userhttp.listUsersResponse'
+            $ref: '#/definitions/identityhttp.listUsersResponse'
       summary: List users
       tags:
       - users
@@ -212,14 +212,14 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/userhttp.registerUserRequest'
+          $ref: '#/definitions/identityhttp.registerUserRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/userhttp.registerUserResponse'
+            $ref: '#/definitions/identityhttp.registerUserResponse'
         "400":
           description: malformed request body
           schema:
@@ -250,7 +250,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/userhttp.findUserResponse'
+            $ref: '#/definitions/identityhttp.findUserResponse'
         "400":
           description: malformed id
           schema:
@@ -278,14 +278,14 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/userhttp.editUserRequest'
+          $ref: '#/definitions/identityhttp.editUserRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/userhttp.editUserResponse'
+            $ref: '#/definitions/identityhttp.editUserResponse'
         "400":
           description: malformed request body or invalid id
           schema:

@@ -1,4 +1,4 @@
-package userhttp
+package identityhttp
 
 import (
 	"context"
@@ -6,25 +6,25 @@ import (
 	"strconv"
 	"time"
 
+	identityapp "github.com/humberto0/shopkeeper/internal/identity/application"
+	identity "github.com/humberto0/shopkeeper/internal/identity/domain"
 	platformhttp "github.com/humberto0/shopkeeper/internal/platform/http"
-	userapp "github.com/humberto0/shopkeeper/internal/user/application"
-	user "github.com/humberto0/shopkeeper/internal/user/domain"
 )
 
 type registerUserUseCase interface {
-	Execute(ctx context.Context, in userapp.RegisterUserInput) (*userapp.RegisterUserOutput, error)
+	Execute(ctx context.Context, in identityapp.RegisterUserInput) (*identityapp.RegisterUserOutput, error)
 }
 
 type findUserByIDUseCase interface {
-	Execute(ctx context.Context, id string) (*userapp.FindUserByIDResult, error)
+	Execute(ctx context.Context, id string) (*identityapp.FindUserByIDResult, error)
 }
 
 type editUserUseCase interface {
-	Execute(ctx context.Context, in userapp.EditUserInput) (*userapp.EditUserOutput, error)
+	Execute(ctx context.Context, in identityapp.EditUserInput) (*identityapp.EditUserOutput, error)
 }
 
 type listUsersUseCase interface {
-	Execute(ctx context.Context, in userapp.ListUsersInput) (*userapp.ListUsersOutput, error)
+	Execute(ctx context.Context, in identityapp.ListUsersInput) (*identityapp.ListUsersOutput, error)
 }
 
 type UserHandler struct {
@@ -130,11 +130,11 @@ func (h *UserHandler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	out, err := h.registerUser.Execute(r.Context(), userapp.RegisterUserInput{
+	out, err := h.registerUser.Execute(r.Context(), identityapp.RegisterUserInput{
 		Name:     req.Name,
 		Email:    req.Email,
 		Password: req.Password,
-		Role:     user.Role(req.Role),
+		Role:     identity.Role(req.Role),
 	})
 	if err != nil {
 		writeDomainError(w, r, err)
@@ -196,7 +196,7 @@ func (h *UserHandler) List(w http.ResponseWriter, r *http.Request) {
 	page, _ := strconv.Atoi(q.Get("page"))
 	limit, _ := strconv.Atoi(q.Get("limit"))
 
-	out, err := h.listUsers.Execute(r.Context(), userapp.ListUsersInput{Page: page, Limit: limit})
+	out, err := h.listUsers.Execute(r.Context(), identityapp.ListUsersInput{Page: page, Limit: limit})
 	if err != nil {
 		writeDomainError(w, r, err)
 		return
@@ -249,11 +249,11 @@ func (h *UserHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	u, err := h.editUser.Execute(r.Context(), userapp.EditUserInput{
+	u, err := h.editUser.Execute(r.Context(), identityapp.EditUserInput{
 		ID:      id,
 		Name:    req.Name,
 		Email:   req.Email,
-		Role:    user.Role(req.Role),
+		Role:    identity.Role(req.Role),
 		Version: req.Version,
 	})
 	if err != nil {

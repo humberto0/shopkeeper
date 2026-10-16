@@ -1,20 +1,20 @@
-package userapp
+package identityapp
 
 import (
 	"context"
 	"errors"
 	"testing"
 
-	user "github.com/humberto0/shopkeeper/internal/user/domain"
-	usermem "github.com/humberto0/shopkeeper/internal/user/memory"
+	identity "github.com/humberto0/shopkeeper/internal/identity/domain"
+	identitymem "github.com/humberto0/shopkeeper/internal/identity/memory"
 )
 
 func TestFindUserByID_Success(t *testing.T) {
 	ctx := context.Background()
-	repo := usermem.NewUserRepository()
+	repo := identitymem.NewUserRepository()
 	uc := NewFindUserByID(repo)
 
-	u, err := user.New("Humberto", "humberto@shop.com", "test1234", user.RoleOwner)
+	u, err := identity.New("Humberto", "humberto@shop.com", "test1234", identity.RoleOwner)
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
@@ -35,8 +35,8 @@ func TestFindUserByID_Success(t *testing.T) {
 	if find.Role != u.Role() {
 		t.Fatalf("expected user role %s, got %s", u.Role(), find.Role)
 	}
-	if find.Role != user.RoleOwner {
-		t.Fatalf("expected user role %s, got %s", user.RoleOwner, find.Role)
+	if find.Role != identity.RoleOwner {
+		t.Fatalf("expected user role %s, got %s", identity.RoleOwner, find.Role)
 	}
 	if find.ID != u.ID() {
 		t.Fatalf("expected user id %s, got %s", u.ID(), find.ID)
@@ -48,12 +48,12 @@ func TestFindUserByID_Success(t *testing.T) {
 
 func TestFindUserByID_MalformedID(t *testing.T) {
 	ctx := context.Background()
-	repo := usermem.NewUserRepository()
+	repo := identitymem.NewUserRepository()
 	uc := NewFindUserByID(repo)
 
 	find, err := uc.Execute(ctx, "not-a-uuid")
-	if !errors.Is(err, user.ErrInvalidID) {
-		t.Fatalf("expected %v, got %v", user.ErrInvalidID, err)
+	if !errors.Is(err, identity.ErrInvalidID) {
+		t.Fatalf("expected %v, got %v", identity.ErrInvalidID, err)
 	}
 	if find != nil {
 		t.Fatalf("expected nil result, got %v", find)
@@ -62,12 +62,12 @@ func TestFindUserByID_MalformedID(t *testing.T) {
 
 func TestFindUserByID_NotFound(t *testing.T) {
 	ctx := context.Background()
-	repo := usermem.NewUserRepository()
+	repo := identitymem.NewUserRepository()
 	uc := NewFindUserByID(repo)
 
 	find, err := uc.Execute(ctx, "00000000-0000-0000-0000-000000000000")
-	if !errors.Is(err, user.ErrNotFound) {
-		t.Fatalf("expected %v, got %v", user.ErrNotFound, err)
+	if !errors.Is(err, identity.ErrNotFound) {
+		t.Fatalf("expected %v, got %v", identity.ErrNotFound, err)
 	}
 	if find != nil {
 		t.Fatalf("expected nil result, got %v", find)

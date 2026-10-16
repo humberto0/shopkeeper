@@ -1,4 +1,4 @@
-package userapp
+package identityapp
 
 import (
 	"context"
@@ -9,25 +9,25 @@ import (
 
 	"uuid"
 
-	user "github.com/humberto0/shopkeeper/internal/user/domain"
-	usermem "github.com/humberto0/shopkeeper/internal/user/memory"
+	identity "github.com/humberto0/shopkeeper/internal/identity/domain"
+	identitymem "github.com/humberto0/shopkeeper/internal/identity/memory"
 )
 
 // seedUsers stores n users created one minute apart (user 0 is the oldest)
 // and returns their ids in creation order.
-func seedUsers(t *testing.T, repo *usermem.UserRepository, n int) []string {
+func seedUsers(t *testing.T, repo *identitymem.UserRepository, n int) []string {
 	t.Helper()
 
 	base := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
 	ids := make([]string, 0, n)
 	for i := range n {
 		createdAt := base.Add(time.Duration(i) * time.Minute)
-		u := user.Restore(
+		u := identity.Restore(
 			uuid.NewV7().String(),
 			fmt.Sprintf("User %d", i),
 			fmt.Sprintf("user%d@shop.com", i),
 			"hash",
-			user.RoleClerk,
+			identity.RoleClerk,
 			true,
 			1,
 			createdAt,
@@ -42,7 +42,7 @@ func seedUsers(t *testing.T, repo *usermem.UserRepository, n int) []string {
 }
 
 func TestListUsers_NewestFirstWithTotals(t *testing.T) {
-	repo := usermem.NewUserRepository()
+	repo := identitymem.NewUserRepository()
 	ids := seedUsers(t, repo, 5)
 	uc := NewListUsers(repo)
 
@@ -67,13 +67,13 @@ func TestListUsers_NewestFirstWithTotals(t *testing.T) {
 		t.Errorf("expected newest users first (%s, %s), got (%s, %s)",
 			ids[4], ids[3], out.Items[0].ID, out.Items[1].ID)
 	}
-	if out.Items[0].Email != "user4@shop.com" || out.Items[0].Role != user.RoleClerk || !out.Items[0].IsActive {
+	if out.Items[0].Email != "user4@shop.com" || out.Items[0].Role != identity.RoleClerk || !out.Items[0].IsActive {
 		t.Errorf("unexpected item fields: %+v", out.Items[0])
 	}
 }
 
 func TestListUsers_LastPartialPage(t *testing.T) {
-	repo := usermem.NewUserRepository()
+	repo := identitymem.NewUserRepository()
 	ids := seedUsers(t, repo, 5)
 	uc := NewListUsers(repo)
 
@@ -90,7 +90,7 @@ func TestListUsers_LastPartialPage(t *testing.T) {
 }
 
 func TestListUsers_PagePastTheEndIsEmpty(t *testing.T) {
-	repo := usermem.NewUserRepository()
+	repo := identitymem.NewUserRepository()
 	seedUsers(t, repo, 3)
 	uc := NewListUsers(repo)
 
@@ -107,7 +107,7 @@ func TestListUsers_PagePastTheEndIsEmpty(t *testing.T) {
 }
 
 func TestListUsers_EmptyRepository(t *testing.T) {
-	uc := NewListUsers(usermem.NewUserRepository())
+	uc := NewListUsers(identitymem.NewUserRepository())
 
 	out, err := uc.Execute(context.Background(), ListUsersInput{})
 	if err != nil {
@@ -167,17 +167,17 @@ type listUsersRepositoryStub struct {
 	err                 error
 }
 
-func (s *listUsersRepositoryStub) List(_ context.Context, limit, offset int) ([]*user.User, int, error) {
+func (s *listUsersRepositoryStub) List(_ context.Context, limit, offset int) ([]*identity.User, int, error) {
 	s.gotLimit, s.gotOffset = limit, offset
 	if s.err != nil {
 		return nil, 0, s.err
 	}
-	return []*user.User{}, 0, nil
+	return []*identity.User{}, 0, nil
 }
 
 func TestListUsers_ItemsAreDetachedFromRepository(t *testing.T) {
 	ctx := context.Background()
-	repo := usermem.NewUserRepository()
+	repo := identitymem.NewUserRepository()
 	ids := seedUsers(t, repo, 1)
 
 	users, _, err := repo.List(ctx, 10, 0)

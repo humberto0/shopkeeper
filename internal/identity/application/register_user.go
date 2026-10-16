@@ -1,29 +1,29 @@
-package userapp
+package identityapp
 
 import (
 	"context"
 	"fmt"
 
-	user "github.com/humberto0/shopkeeper/internal/user/domain"
+	identity "github.com/humberto0/shopkeeper/internal/identity/domain"
 )
 
 type registerUserRepository interface {
 	ExistsByEmail(ctx context.Context, email string) (bool, error)
-	Save(ctx context.Context, u *user.User) error
+	Save(ctx context.Context, u *identity.User) error
 }
 
 type RegisterUserInput struct {
 	Name     string
 	Email    string
 	Password string
-	Role     user.Role
+	Role     identity.Role
 }
 
 type RegisterUserOutput struct {
 	ID    string
 	Name  string
 	Email string
-	Role  user.Role
+	Role  identity.Role
 }
 
 type RegisterUser struct {
@@ -35,7 +35,7 @@ func NewRegisterUser(repo registerUserRepository) *RegisterUser {
 }
 
 func (uc *RegisterUser) Execute(ctx context.Context, in RegisterUserInput) (*RegisterUserOutput, error) {
-	u, err := user.New(in.Name, in.Email, in.Password, in.Role)
+	u, err := identity.New(in.Name, in.Email, in.Password, in.Role)
 	if err != nil {
 		return nil, err
 	}
@@ -45,7 +45,7 @@ func (uc *RegisterUser) Execute(ctx context.Context, in RegisterUserInput) (*Reg
 		return nil, fmt.Errorf("checking if email exists: %w", err)
 	}
 	if exists {
-		return nil, user.ErrEmailAlreadyExists
+		return nil, identity.ErrEmailAlreadyExists
 	}
 
 	if err := uc.repo.Save(ctx, u); err != nil {
