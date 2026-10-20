@@ -4,8 +4,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/humberto0/shopkeeper/test/testutil"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/humberto0/shopkeeper/test/testutil"
 )
 
 var testPool *pgxpool.Pool

@@ -354,7 +354,7 @@ The Makefile is the single entry point: CI, the lefthook git hooks and local ses
 |---|---|---|
 | `make fmt` | `gofmt -l -w .` + `golangci-lint fmt` (goimports with the module's local prefix) | Before committing; the pre-commit hook also runs `gofmt` on staged files |
 | `make fmt-check` | Fails if `gofmt -l` lists any file | Part of `make check` |
-| `make lint` | `golangci-lint run` (config in `golangci.yml`) | Pre-commit hook; CI `lint` job |
+| `make lint` | `golangci-lint run` (config in `.golangci.yml`) | Pre-commit hook; CI `lint` job |
 | `make typecheck` | `go vet ./...` (the compiler already type-checks during `build`) | Pre-push hook; CI `lint` job |
 | `make build` | Static `bin/api` with the Dockerfile flags (`CGO_ENABLED=0 -trimpath -ldflags="-s -w"`) | Before opening a PR; CI `build` job |
 | `make check` | `fmt-check lint typecheck test` | Single local command before pushing |

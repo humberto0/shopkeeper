@@ -12,7 +12,7 @@ func TestRequestID_GeneratesWhenMissing(t *testing.T) {
 		gotFromCtx = RequestIDFromContext(r.Context())
 	}))
 
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/", nil)
 	rec := httptest.NewRecorder()
 	handler.ServeHTTP(rec, req)
 
@@ -28,7 +28,7 @@ func TestRequestID_GeneratesWhenMissing(t *testing.T) {
 func TestRequestID_ReusesIncomingHeader(t *testing.T) {
 	handler := RequestID(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
 
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/", nil)
 	req.Header.Set("X-Request-ID", "client-supplied-id")
 	rec := httptest.NewRecorder()
 	handler.ServeHTTP(rec, req)
@@ -43,7 +43,7 @@ func TestCORS_WildcardAllowsAnyOrigin(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	}))
 
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/", nil)
 	req.Header.Set("Origin", "https://anywhere.example")
 	rec := httptest.NewRecorder()
 	handler.ServeHTTP(rec, req)
@@ -58,7 +58,7 @@ func TestCORS_AllowsConfiguredOriginOnly(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	}))
 
-	allowed := httptest.NewRequest(http.MethodGet, "/", nil)
+	allowed := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/", nil)
 	allowed.Header.Set("Origin", "https://shop.example")
 	rec := httptest.NewRecorder()
 	handler.ServeHTTP(rec, allowed)
@@ -66,7 +66,7 @@ func TestCORS_AllowsConfiguredOriginOnly(t *testing.T) {
 		t.Fatalf("expected allowed origin to be echoed back, got %q", got)
 	}
 
-	blocked := httptest.NewRequest(http.MethodGet, "/", nil)
+	blocked := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/", nil)
 	blocked.Header.Set("Origin", "https://evil.example")
 	rec = httptest.NewRecorder()
 	handler.ServeHTTP(rec, blocked)
@@ -81,7 +81,7 @@ func TestCORS_HandlesPreflightWithoutCallingNext(t *testing.T) {
 		called = true
 	}))
 
-	req := httptest.NewRequest(http.MethodOptions, "/users", nil)
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodOptions, "/users", nil)
 	req.Header.Set("Origin", "https://shop.example")
 	req.Header.Set("Access-Control-Request-Method", "POST")
 	rec := httptest.NewRecorder()

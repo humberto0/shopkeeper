@@ -2,6 +2,7 @@ package platformhttp
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"net/http"
 	"time"
@@ -88,7 +89,7 @@ func Recover(next http.Handler) http.Handler {
 				return
 			}
 
-			if rec == http.ErrAbortHandler {
+			if err, ok := rec.(error); ok && errors.Is(err, http.ErrAbortHandler) {
 				panic(rec)
 			}
 

@@ -8,8 +8,9 @@ import (
 
 	"uuid"
 
-	"github.com/humberto0/shopkeeper/internal/platform/id"
 	"golang.org/x/crypto/bcrypt"
+
+	"github.com/humberto0/shopkeeper/internal/platform/id"
 )
 
 var (
