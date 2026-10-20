@@ -16,7 +16,7 @@ import (
 func serveWithRequestID(t *testing.T, h http.HandlerFunc) *httptest.ResponseRecorder {
 	t.Helper()
 
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/", nil)
 	req.Header.Set("X-Request-ID", "req-123")
 	rec := httptest.NewRecorder()
 	RequestID(h).ServeHTTP(rec, req)

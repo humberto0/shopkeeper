@@ -7,7 +7,7 @@ TEST_DATABASE_URL ?= postgres://shopkeeper:shopkeeper@localhost:5433/shopkeeper_
 # all run these, so the commands live in one place.
 
 # goimports runs through golangci-lint so it uses the local-prefixes from
-# golangci.yml instead of a separately installed binary with its own defaults.
+# .golangci.yml instead of a separately installed binary with its own defaults.
 fmt:
 	gofmt -l -w .
 	golangci-lint fmt

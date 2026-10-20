@@ -100,7 +100,7 @@ func doRequest(t *testing.T, method, path string, body any) *httptest.ResponseRe
 		reader = bytes.NewReader(nil)
 	}
 
-	req := httptest.NewRequest(method, path, reader)
+	req := httptest.NewRequestWithContext(t.Context(), method, path, reader)
 	if body != nil {
 		req.Header.Set("Content-Type", "application/json")
 	}
@@ -217,7 +217,7 @@ func TestE2E_RegisterUser_InvalidPayload(t *testing.T) {
 func TestE2E_RegisterUser_MalformedJSON(t *testing.T) {
 	truncateUsers(t)
 
-	req := httptest.NewRequest(http.MethodPost, "/users", bytes.NewBufferString(`{"name": "Humberto",`))
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/users", bytes.NewBufferString(`{"name": "Humberto",`))
 	req.Header.Set("Content-Type", "application/json")
 
 	rec := httptest.NewRecorder()
@@ -446,7 +446,7 @@ func TestE2E_EditUser_MalformedJSON(t *testing.T) {
 		Role:     "owner",
 	}))
 
-	req := httptest.NewRequest(http.MethodPut, "/users/"+created.ID, bytes.NewBufferString(`{"name": "Humberto",`))
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodPut, "/users/"+created.ID, bytes.NewBufferString(`{"name": "Humberto",`))
 	req.Header.Set("Content-Type", "application/json")
 
 	rec := httptest.NewRecorder()

@@ -10,7 +10,7 @@ import (
 func TestHealth_ProbesOKWithDatabaseUp(t *testing.T) {
 	for _, path := range []string{"/health/live", "/health/ready"} {
 		t.Run(path, func(t *testing.T) {
-			req := httptest.NewRequest(http.MethodGet, path, nil)
+			req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, path, nil)
 			rec := httptest.NewRecorder()
 			router.ServeHTTP(rec, req)
 
@@ -32,7 +32,7 @@ func TestHealth_ProbesOKWithDatabaseUp(t *testing.T) {
 }
 
 func TestHealth_LegacyRouteRemoved(t *testing.T) {
-	req := httptest.NewRequest(http.MethodGet, "/health", nil)
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/health", nil)
 	rec := httptest.NewRecorder()
 	router.ServeHTTP(rec, req)
 
